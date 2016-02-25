@@ -24,6 +24,8 @@
 # 
 include $(TOP)/config/make.cfg
 
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
 USER_LDFLAGS := -static
 
 FUNCS := findcard initcard \

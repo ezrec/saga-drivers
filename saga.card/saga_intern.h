@@ -28,7 +28,7 @@
 
 #include <exec/libraries.h>
 
-#include "picasso96_card.h"
+#include <picasso96/card.h>
 
 struct SAGACardBase {
     struct Library      Lib;
