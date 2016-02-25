@@ -42,7 +42,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    return format2bpp(RGBFormat) * width;
 
     AROS_LIBFUNC_EXIT
 }

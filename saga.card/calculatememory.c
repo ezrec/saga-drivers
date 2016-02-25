@@ -42,7 +42,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    return LogicalMemory;
 
     AROS_LIBFUNC_EXIT
 }

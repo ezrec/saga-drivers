@@ -41,7 +41,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    /* Display is always enabled */
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 }

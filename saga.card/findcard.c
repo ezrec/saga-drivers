@@ -40,7 +40,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    bi->MemoryBase = (APTR)(IPTR)Read32(SAGA_VIDEO_PLANEPTR); 
+    // FIXME: This should be the largest size of memory
+    bi->MemorySize = 2*1024*1024;
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 }

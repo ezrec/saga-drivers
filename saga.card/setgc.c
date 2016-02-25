@@ -42,7 +42,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    Write16(SAGA_VIDEO_WIDTH, mi->Width);
+    Write16(SAGA_VIDEO_HEIGHT, mi->Height);
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 }

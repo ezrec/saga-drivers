@@ -110,7 +110,7 @@ typedef enum {
 
 struct CLUTEntry {
     UBYTE Red;
-    UBYTE Geen;
+    UBYTE Green;
     UBYTE Blue;
 } __packed;
 
@@ -370,7 +370,7 @@ struct BoardInfo {
     APTR                SetFeatureAttrs;
     APTR                DeleteFeature;
     struct MinList      SpecialFeatures;
-    APTR                ModeInfo;
+    struct ModeInfo *   ModeInfo;
     RGBFTYPE            RGBFormat;
     UWORD               XOffset;
     UWORD               YOffset;
@@ -381,7 +381,7 @@ struct BoardInfo {
     struct CLUTEntry    CLUT[256];
     struct ViewPort     ViewPort;
     struct BitMap       VisibleBitMap;
-    APTR                BitMapExtra;
+    struct BitMapExtra  BitMapExtra;
     struct MinList      BitMapList;
     struct MinList      MemList;
     UWORD               MouseX;

@@ -45,6 +45,10 @@
 {
     AROS_LIBFUNC_INIT
 
+    int bpp = format2bpp(RGBFormat);
+
+    Write32(SAGA_VIDEO_PLANEPTR, (IPTR)mem + (width * bpp) * yoffset + (xoffset * bpp));
+             
     return FALSE;
 
     AROS_LIBFUNC_EXIT

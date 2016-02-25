@@ -24,7 +24,8 @@
 # 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
+                 -I$(SRCDIR)/$(CURDIR)/../include
 
 USER_LDFLAGS := -static
 

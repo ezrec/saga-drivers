@@ -30,9 +30,45 @@
 
 #include <picasso96/card.h>
 
+#include <saga/video.h>
+
 struct SAGACardBase {
     struct Library      Lib;
 };
+
+static inline ULONG Read32(IPTR addr)
+{
+    return *(volatile ULONG *)addr;
+}
+
+static inline VOID Write32(IPTR addr, ULONG value)
+{
+    *(volatile ULONG *)addr = value;
+}
+
+static inline UWORD Read16(IPTR addr)
+{
+    return *(volatile UWORD *)addr;
+}
+
+static inline VOID Write16(IPTR addr, UWORD value)
+{
+    *(volatile UWORD *)addr = value;
+}
+
+static inline int format2bpp(RGBFTYPE format)
+{
+    if ((1UL << format) & RGBMASK_8BIT)
+        return 1;
+    if ((1UL << format) & (RGBMASK_15BIT | RGBMASK_16BIT))
+        return 2;
+    if ((1UL << format) & RGBMASK_24BIT)
+        return 3;
+    if ((1UL << format) & RGBMASK_32BIT)
+        return 4;
+
+    return 0;
+}
 
 #endif /* SAGA_INTERN_H */
 /* vim: set shiftwidth=4 expandtab:  */

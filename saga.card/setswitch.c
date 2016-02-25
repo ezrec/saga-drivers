@@ -41,7 +41,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    // FIXME
+    return !new_state;
 
     AROS_LIBFUNC_EXIT
 }

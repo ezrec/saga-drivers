@@ -42,7 +42,22 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    int i, changed = 0;
+    struct CLUTEntry *ce = &bi->CLUT[start];
+
+    for (i = 0; i < count; i++, ce++) {
+        ULONG was, val;
+
+        val = ((ULONG)ce->Red   << 16) |
+              ((ULONG)ce->Green <<  8) |
+              ((ULONG)ce->Blue  <<  0);
+        was = Read32(SAGA_VIDEO_CLUT(start + i));
+        Write32(SAGA_VIDEO_CLUT(start + i), val);
+        if (was != val)
+            changed++;
+    }
+
+    return changed;
 
     AROS_LIBFUNC_EXIT
 }

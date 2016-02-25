@@ -99,8 +99,8 @@ static void add_resolution(struct BoardInfo *bi, int id, UWORD width, UWORD heig
 
     bi->BitsPerCannon = 8;
     bi->RGBFormats = RGBFF_CLUT |
-                     RGBFF_R5G5B5PC |
-                     RGBFF_R5G6B5PC |
+                     RGBFF_R5G5B5 |
+                     RGBFF_R5G6B5 |
                      RGBFF_R8G8B8 |
                      RGBFF_A8R8G8B8;
     bi->BoardType = 22; // One above 'Prototype5' in the Picasso96 type list
@@ -116,8 +116,7 @@ static void add_resolution(struct BoardInfo *bi, int id, UWORD width, UWORD heig
 
     bi->BoardFlags = (bi->BoardFlags & 0xffff0000) |
                         BIF_NOBLITTER |
-                        BIF_NOMEMORYMODEMIX |
-                        BIF_INDISPLAYCHAIN;
+                        BIF_NOMEMORYMODEMIX;
 
     /* For now, we only support 640x480 in all modes */
     for (i = 0; i < MAXMODES; i++) {

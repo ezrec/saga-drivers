@@ -43,7 +43,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    return FALSE;
+    mi->PixelClock = pixelclock;
+    mi->Numerator = 98;
+    mi->Denomerator = 14;
+
+    return 0;   // PixelClock Index
 
     AROS_LIBFUNC_EXIT
 }
