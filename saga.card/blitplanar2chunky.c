@@ -26,7 +26,7 @@
         AROS_LHA(UBYTE, mask, D7),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 45, SAGA)
+        struct Library *, SAGABase, 45, Saga)
 
 /*  FUNCTION
 

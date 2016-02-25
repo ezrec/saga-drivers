@@ -25,7 +25,7 @@
         AROS_LHA(RGBFTYPE, RGBFormat, D7),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 48, SAGA)
+        struct Library *, SAGABase, 48, Saga)
 
 /*  FUNCTION
 

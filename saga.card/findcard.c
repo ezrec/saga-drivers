@@ -20,7 +20,7 @@
         AROS_LHA(struct BoardInfo *, bi, A0),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 5, SAGA)
+        struct Library *, SAGABase, 5, Saga)
 
 /*  FUNCTION
 

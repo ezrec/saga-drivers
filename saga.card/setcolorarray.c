@@ -18,7 +18,7 @@
         AROS_LHA(UWORD, count, D1),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 26, SAGA)
+        struct Library *, SAGABase, 26, Saga)
 
 /*  FUNCTION
 

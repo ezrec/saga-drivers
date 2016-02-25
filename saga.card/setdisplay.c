@@ -17,7 +17,7 @@
         AROS_LHA(BOOL, enabled, D0),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 33, SAGA)
+        struct Library *, SAGABase, 33, Saga)
 
 /*  FUNCTION
 
