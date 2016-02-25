@@ -1,7 +1,7 @@
-Vampire 600 Drivers (for AmigaOS 3.x)
+SAGA Chipset Drivers (for AmigaOS 3.x)
 ---------------------------------
 
-vampire.card:
+saga.card:
 	- Picasso96 plugin
 	- NOT READY FOR USE
 
