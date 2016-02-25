@@ -264,7 +264,7 @@ struct BoardInfo {
     ULONG               GraphicsControllerType;
     UWORD               MoniSwitch;
     UWORD               BitsPerCannon;
-    ULONG               Flags;
+    ULONG               BoardFlags;
     UWORD               SoftSpriteFlags;
     UWORD               ChipFlags;
     ULONG               CardFlags;
