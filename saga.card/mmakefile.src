@@ -60,13 +60,14 @@ FUNCS := findcard initcard \
     setdpmslevel \
     setfeatureattrs \
     setgc \
+    setinterrupt \
     setmemorymode \
     setpanning \
     setreadplane \
     setsprite \
     setspritecolor \
     setspriteimage \
-    setspritepositiion \
+    setspriteposition \
     setswitch \
     setwritemask \
     updateplanar \

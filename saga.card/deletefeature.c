@@ -15,7 +15,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-        struct Library *, SAGABase, 65, Saga)
+        struct Library *, SAGABase, 66, Saga)
 
 /*  FUNCTION
 

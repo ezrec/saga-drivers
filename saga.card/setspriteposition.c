@@ -10,14 +10,14 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(BOOL, SetSpritePositiion,
+        AROS_LH2(BOOL, SetSpritePosition,
 
 /*  SYNOPSIS */
         AROS_LHA(struct BoardInfo *, bi, A0),
         AROS_LHA(RGBFTYPE, RGBFormat, D7),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 60, Saga)
+        struct Library *, SAGABase, 61, Saga)
 
 /*  FUNCTION
 

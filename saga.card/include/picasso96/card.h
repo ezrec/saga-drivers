@@ -315,6 +315,8 @@ struct BoardInfo {
     APTR                SetReadPlane;
     /* R: VOID WaitVerticalSync(struct BoardInfo *bi, BOOL end) (A0, D0) */
     APTR                WaitVerticalSync;
+    /* R: VOID SetInterrupt(struct BoardInfo *bi, BOOL enabled) (A0, D0) */
+    APTR                SetInterrupt;
     /* R: VOID WaitBlitter(struct BoardInfo *bi) (A0) */
     APTR                WaitBlitter;
     APTR                ScrollPlanar;
@@ -359,7 +361,7 @@ struct BoardInfo {
     /* O: BOOL SetSprite(struct BoardInfo *bi, BOOL active, RGBFTYPE RGBFormat) (A0, D0, D7) */
     APTR                SetSprite;
     /* O: BOOL SetSpritePositiion(struct BoardInfo *bi, RGBFTYPE RGBFormat) (A0, D7) */
-    APTR                SetSpritePositiion;
+    APTR                SetSpritePosition;
     /* O: BOOL SetSpriteImage(struct BoardInfo *bi, RGBFTYPE RGBFormat) (A0, D7) */
     APTR                SetSpriteImage;
     /* O: BOOL SetSpriteColor(struct BoardInfo *bi, UBYTE index, UBYTE r, UBYTE g, UBYTE b, RGBFTYPE RGBFormat) (A0, D0, D1, D2, D3, D7) */
@@ -403,14 +405,6 @@ struct BoardInfo {
     struct timeval      SyncPeriod;
     struct MsgPort      SoftVBlankPort;
 };
-
-
-
-
-
-
-
-
 
 #endif /* PICASSO_CARD_H */
 /* vim: set shiftwidth=4 expandtab:  */
