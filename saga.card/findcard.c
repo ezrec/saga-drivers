@@ -7,10 +7,6 @@
 
 #include "saga_intern.h"
 
-#include <aros/libcall.h>
-
-#include "saga_intern.h"
-
 /*****************************************************************************
 
     NAME */
@@ -43,8 +39,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    return FALSE;
 
     return FALSE;
 
