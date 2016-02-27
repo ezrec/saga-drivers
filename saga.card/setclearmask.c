@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(BOOL, SetClearMask,
+        AROS_UFH2(BOOL, SetClearMask,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(UBYTE, mask, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 39, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(UBYTE, mask, D0))
 
 /*  FUNCTION
 

@@ -10,15 +10,12 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH3(BOOL, SetSprite,
+        AROS_UFH3(BOOL, SetSprite,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(BOOL, active, D0),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 60, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(BOOL, active, D0),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

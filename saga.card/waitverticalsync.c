@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(VOID, WaitVerticalSync,
+        AROS_UFH2(VOID, WaitVerticalSync,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(BOOL, end, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 41, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(BOOL, end, D0))
 
 /*  FUNCTION
 

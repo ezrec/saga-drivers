@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(BOOL, SetReadPlane,
+        AROS_UFH2(BOOL, SetReadPlane,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(UBYTE, plane, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 40, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(UBYTE, plane, D0))
 
 /*  FUNCTION
 

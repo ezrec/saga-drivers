@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(ULONG, GetCompatibleFormats,
+        AROS_UFH2(ULONG, GetCompatibleFormats,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 32, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

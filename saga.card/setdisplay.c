@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(BOOL, SetDisplay,
+        AROS_UFH2(BOOL, SetDisplay,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(BOOL, enabled, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 33, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(BOOL, enabled, D0))
 
 /*  FUNCTION
 

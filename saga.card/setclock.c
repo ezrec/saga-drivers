@@ -10,13 +10,10 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(BOOL, SetClock,
+        AROS_UFH1(BOOL, SetClock,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 36, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0))
 
 /*  FUNCTION
 

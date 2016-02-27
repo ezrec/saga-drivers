@@ -10,13 +10,8 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(VOID, ScrollPlanar,
-          AROS_LHA(struct BoardInfo *,(__arg1),A0), 
-
-/*  SYNOPSIS */
-
-/*  LOCATION */
-        struct Library *, SAGABase, 44, Saga)
+        AROS_UFH1(VOID, ScrollPlanar,
+          AROS_UFHA(struct BoardInfo *,(__arg1),A0))
 
 /*  FUNCTION
 

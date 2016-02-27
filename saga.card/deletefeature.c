@@ -10,12 +10,10 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(VOID, _DeleteFeature,
+        AROS_UFH1(VOID, _DeleteFeature,
 
 /*  SYNOPSIS */
-
-/*  LOCATION */
-        struct Library *, SAGABase, 66, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0))
 
 /*  FUNCTION
 

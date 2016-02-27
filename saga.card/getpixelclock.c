@@ -10,16 +10,13 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH4(ULONG, GetPixelClock,
+        AROS_UFH4(ULONG, GetPixelClock,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(struct ModeInfo *, mi, A1),
-        AROS_LHA(ULONG, index, D0),
-        AROS_LHA(RGBFTYPE, RBGFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 35, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(struct ModeInfo *, mi, A1),
+        AROS_UFHA(ULONG, index, D0),
+        AROS_UFHA(RGBFTYPE, RBGFormat, D7))
 
 /*  FUNCTION
 

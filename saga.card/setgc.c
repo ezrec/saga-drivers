@@ -10,15 +10,12 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH3(BOOL, SetGC,
+        AROS_UFH3(BOOL, SetGC,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(struct ModeInfo *, mi, A1),
-        AROS_LHA(BOOL, border, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 28, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(struct ModeInfo *, mi, A1),
+        AROS_UFHA(BOOL, border, D0))
 
 /*  FUNCTION
 

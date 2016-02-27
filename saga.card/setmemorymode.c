@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(BOOL, SetMemoryMode,
+        AROS_UFH2(VOID, SetMemoryMode,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(RGBFTYPE, RGBMode, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 37, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(RGBFTYPE, RGBMode, D7))
 
 /*  FUNCTION
 
@@ -41,9 +38,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    debug("");
-
-    return FALSE;
+    return;
 
     AROS_LIBFUNC_EXIT
 }

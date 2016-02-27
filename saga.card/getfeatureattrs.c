@@ -10,12 +10,10 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(VOID, _GetFeatureAttrs,
+        AROS_UFH1(VOID, _GetFeatureAttrs,
 
 /*  SYNOPSIS */
-
-/*  LOCATION */
-        struct Library *, SAGABase, 57, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0))
 
 /*  FUNCTION
 

@@ -10,12 +10,10 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(VOID, _AllocBitMap,
+        AROS_UFH1(VOID, _AllocBitMap,
 
 /*  SYNOPSIS */
-
-/*  LOCATION */
-        struct Library *, SAGABase, 58, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0))
 
 /*  FUNCTION
 

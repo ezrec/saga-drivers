@@ -10,12 +10,10 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(VOID, _FreeCardMem,
+        AROS_UFH1(VOID, _FreeCardMem,
 
 /*  SYNOPSIS */
-
-/*  LOCATION */
-        struct Library *, SAGABase, 24, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0))
 
 /*  FUNCTION
 

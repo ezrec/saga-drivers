@@ -10,20 +10,17 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH8(BOOL, InvertRect,
+        AROS_UFH8(BOOL, InvertRect,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(struct RenderInfo *, ri, A1),
-        AROS_LHA(UWORD, x, D0),
-        AROS_LHA(UWORD, y, D1),
-        AROS_LHA(UWORD, width, D2),
-        AROS_LHA(UWORD, height, D3),
-        AROS_LHA(UBYTE, mask, D4),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 48, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(struct RenderInfo *, ri, A1),
+        AROS_UFHA(UWORD, x, D0),
+        AROS_UFHA(UWORD, y, D1),
+        AROS_UFHA(UWORD, width, D2),
+        AROS_UFHA(UWORD, height, D3),
+        AROS_UFHA(UBYTE, mask, D4),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

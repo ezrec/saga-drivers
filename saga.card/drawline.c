@@ -10,17 +10,14 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH5(BOOL, DrawLine,
+        AROS_UFH5(BOOL, DrawLine,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(struct RenderInfo *, ri, A1),
-        AROS_LHA(struct Line *, line, A2),
-        AROS_LHA(UBYTE, mask, D0),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 52, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(struct RenderInfo *, ri, A1),
+        AROS_UFHA(struct Line *, line, A2),
+        AROS_UFHA(UBYTE, mask, D0),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

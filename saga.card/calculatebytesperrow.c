@@ -10,15 +10,12 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH3(ULONG, CalculateBytesPerRow,
+        AROS_UFH3(ULONG, CalculateBytesPerRow,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(UWORD, width, D0),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 30, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(UWORD, width, D0),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

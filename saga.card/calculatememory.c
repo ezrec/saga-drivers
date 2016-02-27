@@ -10,15 +10,12 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH3(APTR, CalculateMemory,
+        AROS_UFH3(APTR, CalculateMemory,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(APTR, LogicalMemory, A1),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 31, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(APTR, LogicalMemory, A1),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

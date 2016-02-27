@@ -10,22 +10,19 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH10(BOOL, BlitRect,
+        AROS_UFH10(BOOL, BlitRect,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(struct RenderInfo *, ri, A1),
-        AROS_LHA(UWORD, srcx, D0),
-        AROS_LHA(UWORD, srcy, D1),
-        AROS_LHA(UWORD, dstx, D2),
-        AROS_LHA(UWORD, dsty, D3),
-        AROS_LHA(UWORD, width, D4),
-        AROS_LHA(UWORD, height, D5),
-        AROS_LHA(UBYTE, mask, D6),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 49, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(struct RenderInfo *, ri, A1),
+        AROS_UFHA(UWORD, srcx, D0),
+        AROS_UFHA(UWORD, srcy, D1),
+        AROS_UFHA(UWORD, dstx, D2),
+        AROS_UFHA(UWORD, dsty, D3),
+        AROS_UFHA(UWORD, width, D4),
+        AROS_UFHA(UWORD, height, D5),
+        AROS_UFHA(UBYTE, mask, D6),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 

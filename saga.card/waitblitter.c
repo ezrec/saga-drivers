@@ -10,13 +10,10 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(VOID, WaitBlitter,
+        AROS_UFH1(VOID, WaitBlitter,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 43, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0))
 
 /*  FUNCTION
 
@@ -39,8 +36,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    debug("");
 
     return;
 

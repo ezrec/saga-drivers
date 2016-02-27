@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(BOOL, SetDPMSLevel,
+        AROS_UFH2(BOOL, SetDPMSLevel,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(UBYTE, level, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 55, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(UBYTE, level, D0))
 
 /*  FUNCTION
 

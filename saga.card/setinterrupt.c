@@ -10,14 +10,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(VOID, SetInterrupt,
+        AROS_UFH2(VOID, SetInterrupt,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(BOOL, enable, D0),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 42, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(BOOL, enable, D0))
 
 /*  FUNCTION
 

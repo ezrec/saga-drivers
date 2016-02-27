@@ -10,18 +10,15 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH6(BOOL, SetSpriteColor,
+        AROS_UFH6(BOOL, SetSpriteColor,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct BoardInfo *, bi, A0),
-        AROS_LHA(UBYTE, index, D0),
-        AROS_LHA(UBYTE, r, D1),
-        AROS_LHA(UBYTE, g, D2),
-        AROS_LHA(UBYTE, b, D3),
-        AROS_LHA(RGBFTYPE, RGBFormat, D7),
-
-/*  LOCATION */
-        struct Library *, SAGABase, 63, Saga)
+        AROS_UFHA(struct BoardInfo *, bi, A0),
+        AROS_UFHA(UBYTE, index, D0),
+        AROS_UFHA(UBYTE, r, D1),
+        AROS_UFHA(UBYTE, g, D2),
+        AROS_UFHA(UBYTE, b, D3),
+        AROS_UFHA(RGBFTYPE, RGBFormat, D7))
 
 /*  FUNCTION
 
