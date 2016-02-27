@@ -43,6 +43,8 @@
 
     UWORD format;
 
+    debug("");
+
     switch (RGBFormat) {
     case RGBFB_CLUT: format = SAGA_VIDEO_FORMAT_CLUT8; break;
     case RGBFB_R5G5B5: format = SAGA_VIDEO_FORMAT_RGB15; break;

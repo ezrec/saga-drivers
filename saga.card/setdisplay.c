@@ -41,6 +41,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     /* Display is always enabled */
     return TRUE;
 

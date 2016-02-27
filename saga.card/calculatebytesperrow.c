@@ -42,6 +42,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     return format2bpp(RGBFormat) * width;
 
     AROS_LIBFUNC_EXIT

@@ -40,6 +40,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     return 0;
 
     AROS_LIBFUNC_EXIT

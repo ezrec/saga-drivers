@@ -42,6 +42,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     return LogicalMemory;
 
     AROS_LIBFUNC_EXIT

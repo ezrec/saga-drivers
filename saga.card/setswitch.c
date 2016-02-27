@@ -41,6 +41,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     // FIXME
     return !new_state;
 

@@ -42,6 +42,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     Write16(SAGA_VIDEO_WIDTH, mi->Width);
     Write16(SAGA_VIDEO_HEIGHT, mi->Height);
 

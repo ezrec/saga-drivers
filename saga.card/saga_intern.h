@@ -32,18 +32,41 @@
 
 #include <saga/video.h>
 
+#include <proto/arossupport.h>
+
+#if DEBUG
+#define bug(x,args...)   kprintf(x ,##args)
+#define debug(x,args...) kprintf("%s:%d " x "\n", __func__, __LINE__ ,##args)
+#else
+#define bug(x,args...)   do { } while (0)
+#define debug(x,args...) do { } while (0)
+#endif
+
+
 struct SAGACardBase {
     struct Library      Lib;
 };
 
 static inline ULONG Read32(IPTR addr)
 {
-    return *(volatile ULONG *)addr;
+    ULONG val;
+    if (SIMULATE) {
+        val = 0;
+    } else {
+        val = *(volatile ULONG *)addr;
+    }
+
+    debug("0x%06lx => 0x%08lx", addr, val);
+
+    return val;
 }
 
 static inline VOID Write32(IPTR addr, ULONG value)
 {
-    *(volatile ULONG *)addr = value;
+    debug("0x%06lx <= 0x%08lx", addr, value);
+    if (!SIMULATE) {
+        *(volatile ULONG *)addr = value;
+    }
 }
 
 static inline UWORD Read16(IPTR addr)
@@ -53,7 +76,10 @@ static inline UWORD Read16(IPTR addr)
 
 static inline VOID Write16(IPTR addr, UWORD value)
 {
-    *(volatile UWORD *)addr = value;
+    debug("0x%06lx <= 0x%04lx", addr, value); if (0)
+    if (!SIMULATE) {
+        *(volatile UWORD *)addr = value;
+    }
 }
 
 static inline int format2bpp(RGBFTYPE format)

@@ -43,6 +43,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     return mi->PixelClock;
 
     AROS_LIBFUNC_EXIT

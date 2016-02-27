@@ -43,6 +43,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    debug("");
+
     mi->PixelClock = pixelclock;
     mi->Numerator = 98;
     mi->Denomerator = 14;

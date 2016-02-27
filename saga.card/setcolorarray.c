@@ -45,6 +45,8 @@
     int i, changed = 0;
     struct CLUTEntry *ce = &bi->CLUT[start];
 
+    debug("");
+
     for (i = 0; i < count; i++, ce++) {
         ULONG was, val;
 
