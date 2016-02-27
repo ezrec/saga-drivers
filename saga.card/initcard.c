@@ -235,7 +235,7 @@ void dump_bi(struct BoardInfo *bi)
         AROS_LHA(struct BoardInfo *, bi, A0),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 6, Saga)
+        struct SAGABase *, SAGABase, 6, Saga)
 
 /*  FUNCTION
 

@@ -39,7 +39,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct SAGABase *SAGABase = (struct SAGABase *)bi->CardBase;
     int i, changed = 0;
+    ULONG *clut = &SAGABase->sc_CLUT[0];
     struct CLUTEntry *ce = &bi->CLUT[start];
 
     debug("");
@@ -50,10 +52,12 @@
         val = ((ULONG)ce->Red   << 16) |
               ((ULONG)ce->Green <<  8) |
               ((ULONG)ce->Blue  <<  0);
-        was = Read32(SAGA_VIDEO_CLUT(start + i));
-        Write32(SAGA_VIDEO_CLUT(start + i), val);
-        if (was != val)
+        was = clut[start + i];
+        if (was != val) {
             changed++;
+            clut[start + i] = val;
+            Write32(SAGA_VIDEO_CLUT(start + i), val);
+        }
     }
 
     return changed;

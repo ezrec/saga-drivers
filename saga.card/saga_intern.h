@@ -43,28 +43,17 @@
 #endif
 
 
-struct SAGACardBase {
+struct SAGABase {
     struct Library      Lib;
-    struct ExecBase *   sc_ExecBase;
+    APTR                sc_PlanePtr;
+    ULONG               sc_CLUT[256];
+
+    struct Library *    sc_ExecBase;
 };
-
-static inline ULONG Read32(IPTR addr)
-{
-    ULONG val;
-    if (SIMULATE) {
-        val = 0;
-    } else {
-        val = *(volatile ULONG *)addr;
-    }
-
-    debug("0x%06lx => 0x%08lx", addr, val);
-
-    return val;
-}
 
 static inline VOID Write32(IPTR addr, ULONG value)
 {
-    debug("0x%06lx <= 0x%08lx", addr, value);
+    bug("0x%06lx <= 0x%08lx\n", addr, value);
     if (!SIMULATE) {
         *(volatile ULONG *)addr = value;
     }
@@ -77,7 +66,7 @@ static inline UWORD Read16(IPTR addr)
 
 static inline VOID Write16(IPTR addr, UWORD value)
 {
-    debug("0x%06lx <= 0x%04lx", addr, value); if (0)
+    bug("0x%06lx <= 0x%04lx\n", addr, value);
     if (!SIMULATE) {
         *(volatile UWORD *)addr = value;
     }

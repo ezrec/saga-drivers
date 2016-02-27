@@ -3,6 +3,8 @@
     Licensed under the MIT (Expat) license. ©
 */
 
+#include <string.h>
+
 #include <aros/libcall.h>
 
 #include "saga_intern.h"
@@ -16,7 +18,7 @@
         AROS_LHA(struct BoardInfo *, bi, A0),
 
 /*  LOCATION */
-        struct Library *, SAGABase, 5, Saga)
+        struct SAGABase *, SAGABase, 5, Saga)
 
 /*  FUNCTION
 
@@ -42,8 +44,11 @@
 
     debug("");
 
-    bi->MemoryBase = (APTR)(IPTR)Read32(SAGA_VIDEO_PLANEPTR); 
-    // FIXME: This should be the largest size of memory
+    SAGABase->sc_PlanePtr = (APTR)(IPTR)SAGA_VIDEO_MEMBASE;
+    memset(&SAGABase->sc_CLUT[0], 0, sizeof(SAGABase->sc_CLUT));
+
+    bi->MemoryBase = SAGABase->sc_PlanePtr;
+    // FIXME: This should be the largest size of video memory
     bi->MemorySize = 2*1024*1024;
 
     return TRUE;
