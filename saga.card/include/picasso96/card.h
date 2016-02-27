@@ -350,7 +350,7 @@ struct BoardInfo {
     /* O: BOOL BlitPlanar2Direct(struct BoardInfo *bi, struct BitMap *bm, struct RenderInfo *ri, struct ColorIndexMapping *cmi, UWORD srcx, UWORD srcy, UWORD dstx, UWORD dsty, UWORD sizex, UWORD sizey, UBYTE minterm, UBYTE mask) (A0, A1, A2, A3, D0, D1, D2, D3, D4, D5, D6, D7) */
     APTR                BlitPlanar2Direct;
     APTR                BlitPlanar2DirectDefault;
-    APTR                Reserved[10];
+    APTR                Reserved[12];
     /* O: BOOL SetDPMSLevel(struct BoardInfo *bi, UBYTE level) (A0, D0) */
     APTR                SetDPMSLevel;
     APTR                ResetChip;
@@ -379,9 +379,9 @@ struct BoardInfo {
     UWORD               Border;
     ULONG               Mask;
     struct CLUTEntry    CLUT[256];
-    struct ViewPort     ViewPort;
-    struct BitMap       VisibleBitMap;
-    struct BitMapExtra  BitMapExtra;
+    struct ViewPort *   ViewPort;
+    struct BitMap *     VisibleBitMap;
+    struct BitMapExtra *BitMapExtra;
     struct MinList      BitMapList;
     struct MinList      MemList;
     UWORD               MouseX;
