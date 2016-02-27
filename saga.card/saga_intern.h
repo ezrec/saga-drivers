@@ -45,6 +45,7 @@
 
 struct SAGACardBase {
     struct Library      Lib;
+    struct ExecBase *   sc_ExecBase;
 };
 
 static inline ULONG Read32(IPTR addr)

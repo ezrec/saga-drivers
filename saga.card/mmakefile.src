@@ -79,7 +79,15 @@ FUNCS := findcard initcard \
 
 %build_module mmake=saga-card \
     modname=saga modsuffix=card modtype=library \
-    files="$(FUNCS)"
+    files="$(FUNCS)" uselibs="romhack"
+
+#MM- saga-card-hunk: saga-card saga-card-hunk-quick
+
+#MM- saga-card-hunk-quick: saga-card-quick saga.card
+
+#MM
+saga.card: $(AROSDIR)/Libs/saga.card
+	$(ELF2HUNK) $< $@
 
 %common
 #  vim: set shiftwidth=8 noexpandtab: # 

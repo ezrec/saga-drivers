@@ -3,16 +3,17 @@
     Licensed under the MIT (Expat) license. ©
 */
 
+#include  <string.h>
+
 #include <aros/libcall.h>
 
 #include <proto/exec.h>
-#include <proto/alib.h>
 
 #include "saga_intern.h"
 
 #include "saga_private.h"
 
-static void add_resolution(struct BoardInfo *bi, int id, UWORD width, UWORD height)
+static void add_resolution(struct BoardInfo *bi, CONST_STRPTR name, int id, UWORD width, UWORD height)
 {
     struct Resolution *res;
     struct ModeInfo *mi;
@@ -31,7 +32,7 @@ static void add_resolution(struct BoardInfo *bi, int id, UWORD width, UWORD heig
     res->Flags = P96F_PUBLIC;
 
     CopyMem("P96-0:", res->P96ID, 6);
-    __sprintf(res->Name, "SAGA:%dx%d", width, height);
+    CopyMem(res->Name, name, strlen(name));
 
     res->Modes[0] = NULL;
     for (i = 1; i < MAXMODES; i++) {
@@ -291,7 +292,7 @@ void dump_bi(struct BoardInfo *bi)
     }
 
     /* Create our resolutions */
-    add_resolution(bi, 0, 640, 480);
+    add_resolution(bi, "SAGA:640x480", 0, 640, 480);
 
 
 #define BIC(name, entry) bi->name = AROS_SLIB_ENTRY(name, Saga, entry)
@@ -319,7 +320,7 @@ void dump_bi(struct BoardInfo *bi)
     BIC(SetInterrupt, 42);
     BIC(WaitBlitter, 43);
 
-    // BIC(ScrollPlanar, 44);
+    BIC(ScrollPlanar, 44);
     // BIC(UpdatePlanar, 45);
 
     if (0) {    /* No blitter support needed - our CPU is fast */
@@ -348,7 +349,12 @@ void dump_bi(struct BoardInfo *bi)
     /* Other optional features */
     if (0) {
         BIC(SetDPMSLevel, 55);
-        // BIC(ResetChip, 56);
+    }
+
+    BIC(ResetChip, 56);
+
+    /* Other optional features */
+    if (0) {
         // BIC(GetfeatureAttrs, 57);
         // BIC(AllocBitMap, 58);
         // BIC(FeeBitMap, 59);

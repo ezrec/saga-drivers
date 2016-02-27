@@ -10,7 +10,8 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(VOID, _ScrollPlanar,
+        AROS_LH1(VOID, ScrollPlanar,
+          AROS_LHA(struct BoardInfo *,(__arg1),A0), 
 
 /*  SYNOPSIS */
 

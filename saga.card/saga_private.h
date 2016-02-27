@@ -105,9 +105,11 @@ AROS_LD2(BOOL, SetInterrupt,
 AROS_LD1(VOID, WaitBlitter, 
           AROS_LDA(struct BoardInfo *,(__arg1),A0), 
           struct Library *, SAGABase, 43, Saga);
-AROS_LD0(VOID, _ScrollPlanar, 
+AROS_LD1(VOID, ScrollPlanar, 
+          AROS_LDA(struct BoardInfo *,(__arg1),A0), 
           struct Library *, SAGABase, 44, Saga);
-AROS_LD0(VOID, _UpdatePlanar, 
+AROS_LD1(VOID, _UpdatePlanar, 
+          AROS_LDA(struct BoardInfo *,(__arg1),A0), 
           struct Library *, SAGABase, 45, Saga);
 AROS_LD11(BOOL, BlitPlanar2Chunky, 
           AROS_LDA(struct BoardInfo *,(__arg1),A0), 
@@ -215,7 +217,8 @@ AROS_LD2(BOOL, SetDPMSLevel,
           AROS_LDA(struct BoardInfo *,(__arg1),A0), 
           AROS_LDA(UBYTE,(__arg2),D0), 
           struct Library *, SAGABase, 55, Saga);
-AROS_LD0(VOID, _ResetChip, 
+AROS_LD1(VOID, ResetChip, 
+          AROS_LDA(struct BoardInfo *,(__arg1),A0), 
           struct Library *, SAGABase, 56, Saga);
 AROS_LD0(VOID, _GetFeatureAttrs, 
           struct Library *, SAGABase, 57, Saga);
