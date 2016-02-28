@@ -38,7 +38,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    UWORD format;
+    struct SAGABase *sc = (struct SAGABase *)bi->CardBase;
+    UBYTE format;
 
     debug("");
 
@@ -55,8 +56,10 @@
     } else
         return FALSE;
 
-    Write16(SAGA_VIDEO_MODE, SAGA_VIDEO_MODE_FORMAT(format) |
-                             SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_OFF));
+    sc->sc_Format = format;
+
+    Write16(SAGA_VIDEO_MODE, SAGA_VIDEO_MODE_FORMAT(sc->sc_Format) |
+                             SAGA_VIDEO_MODE_DBLSCN(sc->sc_DoubleScan));
 
     return TRUE;
 

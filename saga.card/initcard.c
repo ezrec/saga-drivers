@@ -70,7 +70,7 @@ void dump_bi(struct BoardInfo *bi)
     bug("  MemorySize: %lu\n", (unsigned long)bi->MemorySize);
     bug("  BoardName: \"%s\"\n", bi->BoardName);
     bug("  VBIName: \"%s\"\n", bi->VBIName);
-    bug("  CardBase: %p\n", bi->CardBase);
+    bug("  CardBase: %p \"%s\"\n", bi->CardBase, bi->CardBase->lib_Node.ln_Name);
     bug("  ChipBase: %p\n", bi->ChipBase);
     bug("  ExecBase: %p\n", bi->ExecBase);
     bug("  UtilBase: %p\n", bi->UtilBase);
@@ -291,7 +291,8 @@ void dump_bi(struct BoardInfo *bi)
     }
 
     /* Create our resolutions */
-    add_resolution(bi, "SAGA:640x480", 0, 640, 480);
+    add_resolution(bi, "SAGA:320x240", 0, 320, 240);
+    add_resolution(bi, "SAGA:640x480", 1, 640, 480);
 
 #define BIC(name) bi->name = name;
 #define BID(name) bi->name = bi->name##Default

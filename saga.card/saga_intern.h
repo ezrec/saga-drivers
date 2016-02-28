@@ -36,7 +36,7 @@
 
 #if DEBUG
 #define bug(x,args...)   kprintf(x ,##args)
-#define debug(x,args...) kprintf("%s:%d " x "\n", __func__, __LINE__ ,##args)
+#define debug(x,args...) bug("%s:%d " x "\n", __func__, __LINE__ ,##args)
 #else
 #define bug(x,args...)   do { } while (0)
 #define debug(x,args...) do { } while (0)
@@ -45,8 +45,12 @@
 
 struct SAGABase {
     struct Library      Lib;
-    APTR                sc_PlanePtr;
+    /* Local copy of CLUT, in SAGA format: -|R8|G8|B8 */
     ULONG               sc_CLUT[256];
+    /* Local copy of SAGA_VIDEO_MODE_FORMAT */
+    UBYTE               sc_Format;
+    /* Local copy of SAGA_VIDEO_MODE_DBLSCN */
+    UBYTE               sc_DoubleScan;
 
     struct Library *    sc_ExecBase;
 };
@@ -85,6 +89,11 @@ static inline int format2bpp(RGBFTYPE format)
 
     return 0;
 }
+
+/* Test if width or height requires doublescan
+ */
+#define IS_DOUBLEX(w)   ((w) <= 320)
+#define IS_DOUBLEY(h)   ((h) <= 240)
 
 #endif /* SAGA_INTERN_H */
 /* vim: set shiftwidth=4 expandtab:  */

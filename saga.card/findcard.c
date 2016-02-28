@@ -69,13 +69,11 @@
     }
 
 
-    SAGABase->sc_PlanePtr = (APTR)(IPTR)SAGA_VIDEO_MEMBASE;
     memset(&SAGABase->sc_CLUT[0], 0, sizeof(SAGABase->sc_CLUT));
 
-    bi->MemoryBase = SAGABase->sc_PlanePtr;
-    // FIXME: This should be the largest size of video memory
-    bi->MemorySize = 2*1024*1024;
-
+    bi->MemoryBase = (APTR)(IPTR)SAGA_VIDEO_MEMBASE;
+    bi->MemorySize = SAGA_VIDEO_MEMSIZE;
+ 
     return TRUE;
 
     AROS_LIBFUNC_EXIT
