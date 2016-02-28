@@ -42,15 +42,18 @@
 
     debug("");
 
-    switch (RGBFormat) {
-    case RGBFB_CLUT: format = SAGA_VIDEO_FORMAT_CLUT8; break;
-    case RGBFB_R5G5B5: format = SAGA_VIDEO_FORMAT_RGB15; break;
-    case RGBFB_R5G6B5: format = SAGA_VIDEO_FORMAT_RGB16; break;
-    case RGBFB_R8G8B8: format = SAGA_VIDEO_FORMAT_RGB24; break;
-    case RGBFB_A8R8G8B8: format = SAGA_VIDEO_FORMAT_RGB32; break;
-    default:
+    if ((1 << RGBFormat) & RGBMASK_8BIT) {
+        format = SAGA_VIDEO_FORMAT_CLUT8;
+    } else if ((1 << RGBFormat) & RGBMASK_15BIT) {
+        format = SAGA_VIDEO_FORMAT_RGB15;
+    } else if ((1 << RGBFormat) & RGBMASK_16BIT) {
+        format = SAGA_VIDEO_FORMAT_RGB16;
+    } else if ((1 << RGBFormat) & RGBMASK_24BIT) {
+        format = SAGA_VIDEO_FORMAT_RGB24;
+    } else if ((1 << RGBFormat) & RGBMASK_32BIT) {
+        format = SAGA_VIDEO_FORMAT_RGB32;
+    } else
         return FALSE;
-    }
 
     Write16(SAGA_VIDEO_MODE, SAGA_VIDEO_MODE_FORMAT(format) |
                              SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_OFF));

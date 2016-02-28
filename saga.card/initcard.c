@@ -36,7 +36,7 @@ static void add_resolution(struct BoardInfo *bi, CONST_STRPTR name, int id, UWOR
 
     res->Modes[0] = NULL;
     for (i = 1; i < MAXMODES; i++) {
-        int depth[MAXMODES] = { 1, 8, 15, 24, 32 };
+        int depth[MAXMODES] = { 1, 8, 16, 24, 32 };
 
         res->Modes[i] = &mi[i];
         mi[i].Width = res->Width;
@@ -266,7 +266,6 @@ void dump_bi(struct BoardInfo *bi)
 
     bi->BitsPerCannon = 8;
     bi->RGBFormats = RGBFF_CLUT |
-                     RGBFF_R5G5B5 |
                      RGBFF_R5G6B5 |
                      RGBFF_R8G8B8 |
                      RGBFF_A8R8G8B8;

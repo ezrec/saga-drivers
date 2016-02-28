@@ -9,8 +9,8 @@
 
 #define SAGA_VIDEO_FORMAT_OFF        0
 #define SAGA_VIDEO_FORMAT_CLUT8      1
-#define SAGA_VIDEO_FORMAT_RGB15      2       /* -|R5|G5|B5 */
-#define SAGA_VIDEO_FORMAT_RGB16      3       /* R5|G6|B5 */
+#define SAGA_VIDEO_FORMAT_RGB15      3       /* -|R5|G5|B5 */
+#define SAGA_VIDEO_FORMAT_RGB16      2       /* R5|G6|B5 */
 #define SAGA_VIDEO_FORMAT_RGB24      4       /* R8|G8|B8 */
 #define SAGA_VIDEO_FORMAT_RGB32      5       /* -|R8|G8|B8 */
 
