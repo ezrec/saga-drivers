@@ -5,6 +5,11 @@
 
 #include <string.h>
 
+#include <proto/exec.h>
+#include <proto/input.h>
+
+#include <devices/inputevent.h>
+
 #include <aros/libcall.h>
 
 #include "saga_intern.h"
@@ -43,6 +48,26 @@
     AROS_LIBFUNC_INIT
 
     debug("");
+
+    // If the user is holding down SHIFT, then don't load.
+    if (1) {
+        struct Library *SysBase = SAGABase->sc_ExecBase;
+        struct IOStdReq io;
+
+        if (0 == OpenDevice("input.device", NULL, &io, NULL)) {
+            struct Library *InputBase = (struct Library *)io.io_Device;
+            UWORD qual;
+
+            qual = PeekQualifier();
+            CloseDevice(&io);
+
+            if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) {
+                debug("Cancelled by SHIFT");
+                return FALSE;
+            }
+        }
+    }
+
 
     SAGABase->sc_PlanePtr = (APTR)(IPTR)SAGA_VIDEO_MEMBASE;
     memset(&SAGABase->sc_CLUT[0], 0, sizeof(SAGABase->sc_CLUT));
