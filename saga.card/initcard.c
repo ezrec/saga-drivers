@@ -266,6 +266,7 @@ void dump_bi(struct BoardInfo *bi)
 
     bi->BitsPerCannon = 8;
     bi->RGBFormats = RGBFF_CLUT |
+                     RGBFF_R5G5B5 |
                      RGBFF_R5G6B5 |
                      RGBFF_R8G8B8 |
                      RGBFF_A8R8G8B8;
