@@ -9,10 +9,6 @@
 
 #include "saga_intern.h"
 
-AROS_UFP1(BOOL, FindCard, 
-          AROS_UFPA(struct BoardInfo *,(__arg1),A0));
-AROS_UFP1(BOOL, InitCard, 
-          AROS_UFPA(struct BoardInfo *,(__arg1),A0));
 AROS_UFP0(VOID, _AllocCardMem);
 AROS_UFP0(VOID, _FreeCardMem);
 AROS_UFP2(BOOL, SetSwitch, 
