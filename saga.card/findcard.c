@@ -49,6 +49,13 @@
 
     debug("");
 
+    // If sc_BoardInfo is set, it means that the driver was already loaded,
+    // and has a BoardInfo attached to it. Don't load again!
+    if (SAGABase->sc_BoardInfo) {
+        debug("Cowardly refusing to load twice");
+        return FALSE;
+    }
+
     // If the user is holding down SHIFT, then don't load.
     if (1) {
         struct Library *SysBase = SAGABase->sc_ExecBase;
@@ -68,6 +75,9 @@
         }
     }
 
+
+    // Set up SAGABase
+    SAGABase->sc_BoardInfo = bi;
 
     memset(&SAGABase->sc_CLUT[0], 0, sizeof(SAGABase->sc_CLUT));
 

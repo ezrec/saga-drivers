@@ -52,6 +52,7 @@ struct SAGABase {
     /* Local copy of SAGA_VIDEO_MODE_DBLSCN */
     UBYTE               sc_DoubleScan;
 
+    struct BoardInfo *  sc_BoardInfo;   /* Only one board! */
     struct Library *    sc_ExecBase;
 };
 
