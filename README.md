@@ -23,8 +23,8 @@ use it on an AmigaOS system.
 
 ### Installation (AmigaOS)
 
-* Install Picasso96. Select the `uaegfx` driver only during installation.
-* Rename `SYS:Devs/Monitors/uaefgx` to `SYS:Devs/Monitors/SAGA` in Workbench
+* Install Picasso96. Select _only_ the `uaegfx` driver during installation.
+* Rename `SYS:Devs/Monitors/uaefgx` to `SYS:Devs/Monitors/SAGA` in __Workbench__
 * Modify the `SAGA` icon's tooltypes, and set `BoardType=saga`
 * Copy `saga.card` to `SYS:Libs/Picasso96/saga.card`
 * Reboot, and use `SYS:Prefs/Picasso96Mode` to attach the SAGA board to the modes
