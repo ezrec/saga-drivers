@@ -44,6 +44,9 @@
 
     debug("");
 
+    // Picasso96 version 2.3 doesn't set bi->ModeInfo for us.
+    bi->ModeInfo = mi;
+
     width = mi->Width;
     height = mi->Height;
 
@@ -60,7 +63,6 @@
 
     Write16(SAGA_VIDEO_MODE, SAGA_VIDEO_MODE_FORMAT(sc->sc_Format) |
                              SAGA_VIDEO_MODE_DBLSCN(sc->sc_DoubleScan));
-
 
     return TRUE;
 
