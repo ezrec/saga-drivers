@@ -259,7 +259,7 @@ void dump_bi(struct BoardInfo *bi)
 {
     AROS_LIBFUNC_INIT
 
-    int i;
+    int i, clocks;
 
     debug("bi: %p", bi);
     dump_bi(bi);
@@ -275,8 +275,10 @@ void dump_bi(struct BoardInfo *bi)
     bi->PaletteChipType = 0;            // 'Unknown'
     bi->BoardName = "SAGA";
 
+    clocks = saga_pll_clock_count();
+
     for (i = 0; i < MAXMODES; i++) {
-        bi->PixelClockCount[i] = 1;
+        bi->PixelClockCount[i] = clocks;
         bi->MaxHorValue[i] = 0x4000;
         bi->MaxVerValue[i] = 0x4000;
     }
@@ -285,15 +287,17 @@ void dump_bi(struct BoardInfo *bi)
                         BIF_NOBLITTER |
                         BIF_NOMEMORYMODEMIX;
 
-    /* For now, we only support 640x480 in all modes */
     for (i = 0; i < MAXMODES; i++) {
-        bi->MaxHorResolution[i] = 640;
-        bi->MaxVerResolution[i] = 480;
+        bi->MaxHorResolution[i] = 4000;
+        bi->MaxVerResolution[i] = 4000;
     }
 
     /* Create our resolutions */
     add_resolution(bi, "SAGA:320x240", 0, 320, 240);
     add_resolution(bi, "SAGA:640x480", 1, 640, 480);
+    add_resolution(bi, "SAGA:800x600", 2, 800, 600);
+    add_resolution(bi, "SAGA:1024x768", 3, 1024, 768);
+    add_resolution(bi, "SAGA:1360x768", 4, 1360, 768);
 
 #define BIC(name) bi->name = name;
 #define BID(name) bi->name = bi->name##Default

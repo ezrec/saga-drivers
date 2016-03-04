@@ -75,7 +75,9 @@ FUNCS := findcard initcard \
     setwritemask \
     updateplanar \
     waitblitter \
-    waitverticalsync
+    waitverticalsync \
+    \
+    saga_pll
 
 %build_module mmake=saga-card \
     modname=saga modsuffix=card modtype=library \

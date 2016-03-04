@@ -96,5 +96,12 @@ static inline int format2bpp(RGBFTYPE format)
 #define IS_DOUBLEX(w)   ((w) <= 320)
 #define IS_DOUBLEY(h)   ((h) <= 240)
 
+/* saga_pll.c */
+int saga_pll_clock_count(void);
+int saga_pll_clock_freq(int id, BOOL is_ntsc, ULONG *freq);
+int saga_pll_clock_lookup(BOOL is_ntsc, ULONG *freq);
+int saga_pll_clock_program(int clock);
+
+
 #endif /* SAGA_INTERN_H */
 /* vim: set shiftwidth=4 expandtab:  */

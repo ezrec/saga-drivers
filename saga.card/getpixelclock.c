@@ -40,9 +40,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    debug("");
+    struct ExecBase *SysBase = (struct ExecBase *)bi->ExecBase;
+    BOOL is_NTSC = SysBase->PowerSupplyFrequency == 60;
+    ULONG freq = 0;
 
-    return mi->PixelClock;
+    saga_pll_clock_freq(index, is_NTSC, &freq);
+
+    debug("index=%ld, pixelclock = %ld", index, freq);
+
+    if (IS_DOUBLEY(mi->Height))
+        freq /= 2;
+
+    return freq;
 
     AROS_LIBFUNC_EXIT
 }

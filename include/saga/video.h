@@ -51,5 +51,14 @@
 
 #define SAGA_VIDEO_CLUT(x)   (0x00DFF400 + (((x) & 0xFF) << 2))
 
+#define SAGA_VIDEO_PLLW    0x00DFF1F8
+#define   SAGA_VIDEO_PLLW_MAGIC        0x43430000
+#define   SAGA_VIDEO_PLLW_CS(x)        (((x) & 1) << 0)
+#define   SAGA_VIDEO_PLLW_CLK(x)       (((x) & 1) << 1)
+#define   SAGA_VIDEO_PLLW_MOSI(x)      (((x) & 1) << 2)
+#define   SAGA_VIDEO_PLLW_UPDATE(x)    (((x) & 1) << 3)
+
+#define SAGA_VIDEO_PLLR    0x00DFF1FA
+
 #endif /* SAGA_VIDEO_H */
 /* vim: set shiftwidth=4 expandtab:  */
