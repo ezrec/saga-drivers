@@ -9,60 +9,36 @@
 
 #include <exec/libraries.h>
 #include <exec/devices.h>
+#include <exec/tasks.h>
 
-#include <proto/arossupport.h>
-
-#if DEBUG
-#define bug(x,args...)   kprintf(x ,##args)
-#define debug(x,args...) bug("%s:%d " x "\n", __func__, __LINE__ ,##args)
-#else
-#define bug(x,args...)   do { } while (0)
-#define debug(x,args...) do { } while (0)
-#endif
+#include "sdcmd.h"
 
 #define SAGASD_UNITS    1       /* Only one chip select for now */
+
+#define SDU_STACK_SIZE  (4096 / sizeof(ULONG))
 
 struct SAGASDBase {
     struct Device       sd_Device;
     struct Library *    sd_ExecBase;
     struct SAGASDUnit {
         struct Unit sdu_Unit;
-        BOOL sdu_Enabled;
-        IPTR sdu_IOBase;
+        struct Task sdu_Task;
+        TEXT        sdu_Name[6];                /* "SDIOx" */
+        ULONG       sdu_Stack[1024];          /* 4K stack */
+        BOOL        sdu_Enabled;
+
+        IPTR        sdu_IOBase;
         struct MsgPort *sdu_MsgPort;
+
+        BOOL sdu_Present;               /* Is a device detected? */
+        BOOL sdu_Valid;                 /* Is the device ready for IO? */
+        BOOL sdu_ReadOnly;              /* Is the device read-only? */
         ULONG sdu_ChangeNum;
-        struct {
-            BOOL sdi_ReadOnly;
-        } sdu_Identify;
+        struct sdcmd_info sdu_Identify;
+
+        struct Library *sdu_ExecBase;
     } sd_Unit[SAGASD_UNITS];
 };
-
-static inline UBYTE Read8(IPTR addr)
-{
-    return *(volatile UBYTE *)addr;
-}
-
-static inline VOID Write8(IPTR addr, ULONG value)
-{
-    bug("0x%06lx <= 0x%08lx\n", addr, value);
-    if (!SIMULATE) {
-        *(volatile UBYTE *)addr = value;
-    }
-}
-
-static inline UWORD Read16(IPTR addr)
-{
-    return *(volatile UWORD *)addr;
-}
-
-static inline VOID Write16(IPTR addr, UWORD value)
-{
-    bug("0x%06lx <= 0x%04lx\n", addr, value);
-    if (!SIMULATE) {
-        *(volatile UWORD *)addr = value;
-    }
-}
-
 
 #endif /* SAGASD_INTERN_H */
 /* vim: set shiftwidth=4 expandtab:  */

@@ -105,6 +105,12 @@ struct sdcmd_info {
     UBYTE cid[16];
 };
 
+/* Is there something in the SD slot?
+ */
+BOOL  sdcmd_present(ULONG iobase);
+
+/* Detect and initialize the SD device
+ */
 UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info);
 
 UBYTE sdcmd_read_block(ULONG iobase, ULONG blockaddr, UBYTE *buff);

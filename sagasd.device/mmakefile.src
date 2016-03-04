@@ -32,13 +32,19 @@ USER_CFLAGS := -D__NOLIBBASE__ -DDEBUG=0 -DSIMULATE=0 \
 
 USER_LDFLAGS := -static
 
+DEVICE_FILES := sagasd_device sdcmd
+
 SDDIAG_FILES := sddiag sdcmd
 
-#MM- saga-sd: saga-sd-c
+#MM- saga-sd: saga-sd-c saga-sd-device
 
 %build_prog mmake=saga-sd-c progname=SDDiag \
       files="$(SDDIAG_FILES)" targetdir="$(AROS_C)" \
       usestartup=no
+
+%build_module mmake=saga-sd-device \
+       modname=sagasd modtype=device \
+       files="$(DEVICE_FILES)"
 
 %common
 #  vim: set shiftwidth=8 noexpandtab: #

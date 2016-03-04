@@ -24,13 +24,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <string.h>     // For memset
+
 #include <exec/types.h>
 
 #include <saga/sd.h>
 
 #include "sdcmd.h"
 
-#include "sagasd_intern.h"
+#include "common.h"
 
 UBYTE crc7(UBYTE crc, UBYTE byte)
 {
@@ -256,18 +258,27 @@ static ULONG bits(UBYTE *mask, int start, int len)
     return ret;
 }
 
+BOOL sdcmd_present(ULONG iobase)
+{
+    UBYTE tmp;
+    
+    tmp = Read16(iobase + SAGA_SD_STAT);
+    return (tmp & SAGA_SD_STAT_CD) ? TRUE : FALSE;
+}
 
-/* If true, filled in the total size in blocks of the device
+
+/* If non-zero, filled in the total size in blocks of the device
  */
 UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
 {
-    UBYTE r1, tmp;
+    UBYTE r1;
     ULONG ocr;
     int i;
 
+    memset(info, 0, sizeof(*info));
+
     /* First, check the DETECT bit */
-    tmp = Read16(iobase + SAGA_SD_STAT);
-    if (!(tmp & SAGA_SD_STAT_CD))
+    if (!sdcmd_present(iobase))
         return ~0;
 
     /* Emit at least 74 clocks of idle */
