@@ -13,7 +13,7 @@
 
 #include "saga_private.h"
 
-static void add_resolution(struct BoardInfo *bi, CONST_STRPTR name, int id, UWORD width, UWORD height)
+static void add_resolution(struct BoardInfo *bi, CONST_STRPTR name, ULONG id, UWORD width, UWORD height)
 {
     struct Resolution *res;
     struct ModeInfo *mi;
@@ -25,7 +25,7 @@ static void add_resolution(struct BoardInfo *bi, CONST_STRPTR name, int id, UWOR
     res = AllocMem(sizeof(*res) + sizeof(struct ModeInfo) * MAXMODES, MEMF_ANY | MEMF_CLEAR);
     mi = (struct ModeInfo *)&res[1];
 
-    res->DisplayID = 0x52000000 + id;
+    res->DisplayID = id;
     res->BoardInfo = bi;
     res->Width = width;
     res->Height = height;
@@ -293,11 +293,10 @@ void dump_bi(struct BoardInfo *bi)
     }
 
     /* Create our resolutions */
-    add_resolution(bi, "SAGA:320x240", 0, 320, 240);
-    add_resolution(bi, "SAGA:640x480", 1, 640, 480);
-    add_resolution(bi, "SAGA:800x600", 2, 800, 600);
-    add_resolution(bi, "SAGA:1024x768", 3, 1024, 768);
-    add_resolution(bi, "SAGA:1360x768", 4, 1360, 768);
+    add_resolution(bi, "SAGA:320x240" , 0x52011000, 320, 240);
+    add_resolution(bi, "SAGA:640x480" , 0x52031000, 640, 480);
+    add_resolution(bi, "SAGA:800x600" , 0x52041000, 800, 600);
+    add_resolution(bi, "SAGA:1024x768", 0x52051000, 1024, 768);
 
 #define BIC(name) bi->name = name;
 #define BID(name) bi->name = bi->name##Default
