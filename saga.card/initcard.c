@@ -32,7 +32,7 @@ static void add_resolution(struct BoardInfo *bi, CONST_STRPTR name, ULONG id, UW
     res->Flags = P96F_PUBLIC;
 
     CopyMem("P96-0:", res->P96ID, 6);
-    CopyMem(res->Name, name, strlen(name) + 1);
+    CopyMem(name, res->Name, strlen(name) + 1);
 
     res->Modes[0] = NULL;
     for (i = 1; i < MAXMODES; i++) {
