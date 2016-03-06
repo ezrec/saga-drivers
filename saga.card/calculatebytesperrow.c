@@ -39,7 +39,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    debug("");
+    debug("Width=%ld, RGBFormat=%ld", width, RGBFormat);
 
     return format2bpp(RGBFormat) * width;
 

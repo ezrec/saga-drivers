@@ -56,6 +56,14 @@ struct SAGABase {
     struct Library *    sc_ExecBase;
 };
 
+static inline VOID Write8(IPTR addr, UBYTE value)
+{
+    bug("0x%06lx <= 0x%02lx\n", addr, value);
+    if (!SIMULATE) {
+        *(volatile UBYTE *)addr = value;
+    }
+}
+
 static inline VOID Write32(IPTR addr, ULONG value)
 {
     bug("0x%06lx <= 0x%08lx\n", addr, value);
@@ -77,20 +85,6 @@ static inline VOID Write16(IPTR addr, UWORD value)
     }
 }
 
-static inline int format2bpp(RGBFTYPE format)
-{
-    if ((1UL << format) & RGBMASK_8BIT)
-        return 1;
-    if ((1UL << format) & (RGBMASK_15BIT | RGBMASK_16BIT))
-        return 2;
-    if ((1UL << format) & RGBMASK_24BIT)
-        return 3;
-    if ((1UL << format) & RGBMASK_32BIT)
-        return 4;
-
-    return 0;
-}
-
 /* Test if width or height requires doublescan
  */
 #define IS_DOUBLEX(w)   ((w) <= 320)
@@ -102,6 +96,14 @@ int saga_pll_clock_freq(int id, BOOL is_ntsc, ULONG *freq);
 int saga_pll_clock_lookup(BOOL is_ntsc, ULONG *freq);
 int saga_pll_clock_program(int clock);
 
+/* from modeline_vesa.c */
+const struct ModeInfo modeline_vesa_entry[0];
+const int modeline_vesa_entries;
+
+/* from saga_intern.c */
+void dump_ModeInfo(struct ModeInfo *mi);
+void dump_BoardInfo(struct BoardInfo *bi);
+int format2bpp(RGBFTYPE format);
 
 #endif /* SAGA_INTERN_H */
 /* vim: set shiftwidth=4 expandtab:  */

@@ -43,7 +43,8 @@
     debug("Mode: %p", mi);
     debug("clock_id = %ld (%ld, %ld)", clock_id, mi->Numerator, mi->Denomerator);
 
-    saga_pll_clock_program(clock_id);
+    if (!SIMULATE)
+        saga_pll_clock_program(clock_id);
 
     return 0;
 

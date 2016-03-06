@@ -39,7 +39,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    debug("");
+    debug("LogicalMemory=0x%08lx RGBFormat=%d", LogicalMemory, RGBFormat);
 
     return LogicalMemory;
 

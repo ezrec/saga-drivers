@@ -38,7 +38,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    debug("");
+    debug("RGBFormat=%ld", RGBFormat);
 
     return RGBMASK_8BIT | RGBMASK_15BIT | RGBMASK_16BIT | RGBMASK_24BIT | RGBMASK_32BIT;
 

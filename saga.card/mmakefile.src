@@ -27,7 +27,8 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
                  -I$(SRCDIR)/$(CURDIR)/../include
 
-USER_CFLAGS := -D__NOLIBBASE__ -DDEBUG=0 -DSIMULATE=0
+USER_CFLAGS := -D__NOLIBBASE__ -DDEBUG=0 -DSIMULATE=0 \
+               -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 USER_LDFLAGS := -static
 
@@ -77,12 +78,20 @@ FUNCS := findcard initcard \
     waitblitter \
     waitverticalsync \
     \
-    saga_pll
+    saga_intern \
+    saga_pll \
+    modeline_vesa
 
 %build_module mmake=saga-card \
     modname=saga modsuffix=card modtype=library \
     files="$(FUNCS)" uselibs="romhack" \
     moduledir="$(AROS_DIR_LIBRARIES)/Picasso96"
+
+SGDIAG_FILES := sgdiag
+
+%build_prog mmake=saga-card-c progname=SGDiag \
+      files="$(SGDIAG_FILES)" targetdir="$(AROS_C)" \
+      usestartup=no
 
 %common
 #  vim: set shiftwidth=8 noexpandtab: # 

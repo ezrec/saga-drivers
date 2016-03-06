@@ -46,6 +46,9 @@
 
     // Picasso96 version 2.3 doesn't set bi->ModeInfo for us.
     bi->ModeInfo = mi;
+    bi->Border = border;
+
+    dump_ModeInfo(mi);
 
     width = mi->Width;
     height = mi->Height;

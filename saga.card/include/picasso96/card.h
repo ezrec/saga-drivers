@@ -174,7 +174,7 @@ struct ModeInfo {
     UWORD       Width;
     UWORD       Height;
     UBYTE       Depth;
-    UBYTE       Flags;
+    UBYTE       Flags;  /* See GM* flags below */
     UWORD       HorTotal;
     UWORD       HorBlankSize;
     UWORD       HorSyncStart;
@@ -189,6 +189,23 @@ struct ModeInfo {
     UBYTE       Denomerator;
     ULONG       PixelClock;
 } __packed;
+
+#define GMB_DOUBLECLOCK         0       /* Clock is doubled after selection */
+#define GMB_INTERLACE           1       /* Mode is interlaced */
+#define GMB_DOUBLESCAN          2       /* Scanlines are doubled */
+#define GMB_HPOLARITY           3       /* Horizontal Polarity */
+#define GMB_VPOLARITY           4       /* Vertical Polarity */
+#define GMB_COMPATVIDEO         5       /* Compatible Video */
+#define GMB_DOUBLEVERTICAL      6       /* Doubled Vertical */
+
+#define GMF_DOUBLECLOCK         (1UL << GMB_DOUBLECLOCK)
+#define GMF_INTERLACE           (1UL << GMB_INTERLACE)
+#define GMF_DOUBLESCAN          (1UL << GMB_DOUBLESCAN)
+#define GMF_HPOLARITY           (1UL << GMB_HPOLARITY)
+#define GMF_VPOLARITY           (1UL << GMB_VPOLARITY)
+#define GMF_COMPATVIDEO         (1UL << GMB_COMPATVIDEO)
+#define GMF_DOUBLEVERTICAL      (1UL << GMB_DOUBLEVERTICAL)
+
 
 #define MAXRESOLUTIONNAMELENGTH 22
 
@@ -376,7 +393,7 @@ struct BoardInfo {
     UWORD               YOffset;
     UBYTE               Depth;
     UBYTE               ClearMask;
-    UWORD               Border;
+    BOOL                Border;
     ULONG               Mask;
     struct CLUTEntry    CLUT[256];
     struct ViewPort *   ViewPort;
