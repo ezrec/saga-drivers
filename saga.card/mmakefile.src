@@ -28,6 +28,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
                  -I$(SRCDIR)/$(CURDIR)/../include
 
 USER_CFLAGS := -D__NOLIBBASE__ -DDEBUG=0 -DSIMULATE=0 \
+               -DMODELINE_VESA=0 \
                -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 USER_LDFLAGS := -static

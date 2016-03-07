@@ -28,6 +28,7 @@
 /* Originally adapted from AROS uaegfx.hidd timing data
  */
 const struct ModeInfo modeline_vesa_entry[] = {
+#if MODELINE_VESA
     { 
         .Node = { .ln_Name = "VESA: 320 x 240 60Hz" },
         .Width = 320, .Height = 240,
@@ -68,6 +69,7 @@ const struct ModeInfo modeline_vesa_entry[] = {
         .HorSyncSize  = 112,    .VerSyncSize  = 5,
         .Numerator = 60,        /* Refresh rate */
     },
+#endif
 };
 
 const int modeline_vesa_entries = sizeof(modeline_vesa_entry)/sizeof(modeline_vesa_entry[0]);
