@@ -56,6 +56,9 @@ struct SAGABase {
     struct Library *    sc_ExecBase;
 };
 
+/* Marks a sc_CLUT entry as valid */
+#define SAGA_CLUT_ENTRY_VALID   (1UL << 31)
+
 static inline VOID Write8(IPTR addr, UBYTE value)
 {
     bug("0x%06lx <= 0x%02lx\n", addr, value);

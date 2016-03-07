@@ -49,14 +49,15 @@
     for (i = 0; i < count; i++, ce++) {
         ULONG was, val;
 
-        val = ((ULONG)ce->Red   << 16) |
+        val = SAGA_CLUT_ENTRY_VALID    |
+              ((ULONG)ce->Red   << 16) |
               ((ULONG)ce->Green <<  8) |
               ((ULONG)ce->Blue  <<  0);
         was = clut[start + i];
         if (was != val) {
             changed++;
             clut[start + i] = val;
-            Write32(SAGA_VIDEO_CLUT(start + i), val);
+            Write32(SAGA_VIDEO_CLUT(start + i), val & ~SAGA_CLUT_ENTRY_VALID);
         }
     }
 
