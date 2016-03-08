@@ -60,7 +60,7 @@ void sdcmd_send(ULONG iobase, UBYTE cmd, ULONG arg)
     int i;
     UBYTE crc;
 
-    cmd = (cmd & 0x3f) | 0x40;
+    cmd = (cmd & 0x3f) | SDCMD_VALID;
 
     crc = crc7(0, cmd);
 
@@ -110,6 +110,7 @@ UBYTE sdcmd_r3(ULONG iobase, LONG *ocr)
     for (i = 0; i < 4; i++) {
         r3 <<= 8;
         r3 |= Read8(iobase + SAGA_SD_DATA);
+        debug("r3=0x%08x, i=%d\n", r3, i);
     }
 
     *ocr = r3;
@@ -174,11 +175,7 @@ UBYTE sdcmd_stop_transmission(ULONG iobase)
     UBYTE r1, tmp;
     int i;
 
-    Write8(iobase + SAGA_SD_DATA, SDCMD_STOP_TRANSMISSION);
-
-    /* Discard 'stuff' byte */
-    tmp = Read8(iobase + SAGA_SD_DATA);
-
+    sdcmd_send(iobase, SDCMD_STOP_TRANSMISSION, 0);
     /* Read response */
     r1 = sdcmd_r1(iobase);
 
@@ -242,13 +239,13 @@ static ULONG bits(UBYTE *mask, int start, int len)
     ULONG ret = 0;
     int i;
 
-    mask += start / 8;
+    mask -= start / 8;
 
     start &= 7;
 
-    for (i = 0; i < 0; i++, start++) {
+    for (i = 0; i < len; i++, start++) {
         if (start == 8) {
-            mask++;
+            mask--;
             start = 0;
         }
 
@@ -263,7 +260,7 @@ BOOL sdcmd_present(ULONG iobase)
     UBYTE tmp;
     
     tmp = Read16(iobase + SAGA_SD_STAT);
-    return (tmp & SAGA_SD_STAT_CD) ? TRUE : FALSE;
+    return (tmp & SAGA_SD_STAT_NCD) ? FALSE : TRUE;
 }
 
 
@@ -282,8 +279,12 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
         return ~0;
 
     /* Emit at least 74 clocks of idle */
+    Write8(iobase + SAGA_SD_CTL, SAGA_SD_CTL_NCS(0));
     for (i = 0; i < 10; i++)
         Write8(iobase + SAGA_SD_DATA, 0xff);
+    Write8(iobase + SAGA_SD_CTL, SAGA_SD_CTL_NCS(1));
+    Write8(iobase + SAGA_SD_DATA, 0xff);
+    Write8(iobase + SAGA_SD_CTL, SAGA_SD_CTL_NCS(0));
 
     /* Put into idle state */
     sdcmd_send(iobase, SDCMD_RESET, 0);
@@ -305,16 +306,19 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
             break;
     }
 
+    debug("r1=%d", r1);
     if (r1)
         return r1;
 
     /* Check for voltage levels */
     sdcmd_send(iobase, SDCMD_READ_OCR, 0);
     r1 = sdcmd_r3(iobase, &ocr);
+    debug("r1=%d", r1);
     if (r1)
         return r1;
 
     /* Not in our voltage range */
+    debug("ocr=0x%08x (vs 0x%08x)", ocr, SDOCRF_MAX_3_3V | SDOCRF_MAX_3_4V);
     if (!(ocr & (SDOCRF_MAX_3_3V | SDOCRF_MAX_3_4V)))
         return SDERRF_IDLE;
 
@@ -322,6 +326,7 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
     /* Set the block length to 512 bytes */
     sdcmd_send(iobase, SDCMD_SET_BLOCKLEN, SDSIZ_BLOCK);
     r1 = sdcmd_r1(iobase);
+    debug("r1=%d", r1);
     if (r1)
         return r1;
 
@@ -331,32 +336,38 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
         /* Get the CSD data */
         sdcmd_send(iobase, SDCMD_SEND_CSD, 0);
         r1 = sdcmd_r1(iobase);
+        debug("r1=%d", r1);
         if (r1)
             return r1;
 
         r1 = sdcmd_read_packet(iobase, &info->csd[0], 16);
+        debug("r1=%d", r1);
         if (r1)
             return r1;
 
         /* Get the CID data */
         sdcmd_send(iobase, SDCMD_SEND_CID, 0);
         r1 = sdcmd_r1(iobase);
+        debug("r1=%d", r1);
         if (r1)
             return r1;
 
         r1 = sdcmd_read_packet(iobase, &info->cid[0], 16);
+        debug("r1=%d", r1);
         if (r1)
             return r1;
 
         info->block_size = SDSIZ_BLOCK;
         /* Bits 49:47 of the CSD */
-        c_size_mult = bits(&info->csd[0], 47, 3);
+        c_size_mult = bits(&info->csd[15], 47, 3);
         /* Bits 83:80 of the CSD */
-        read_bl_len = bits(&info->csd[0], 80, 4);
+        read_bl_len = bits(&info->csd[15], 80, 4);
         /* Bits 73:62 of the CSD */
-        c_size = bits(&info->csd[0], 62, 12);
+        c_size = bits(&info->csd[15], 62, 12);
 
-        info->blocks = (1UL << c_size_mult) * (1UL << read_bl_len) / SDSIZ_BLOCK * (c_size + 1);
+        debug("c_size_mult=%ld, read_bl_len=%ld, c_size=%ld", c_size_mult, read_bl_len, c_size);
+        info->blocks = (1UL << (c_size_mult + read_bl_len)) / SDSIZ_BLOCK * (c_size + 1);
+        debug("blocks=%ld", info->blocks);
     }
 
     return 0;
@@ -379,6 +390,9 @@ UBYTE sdcmd_read_block(ULONG iobase, ULONG blockaddr, UBYTE *buff)
 UBYTE sdcmd_read_blocks(ULONG iobase, ULONG blockaddr, UBYTE *buff, int blocks)
 {
     UBYTE r1;
+
+    if (blocks == 1)
+        return sdcmd_read_block(iobase, blockaddr, buff);
 
     /* Send the read block command */
     sdcmd_send(iobase, SDCMD_READ_MULTIPLE_BLOCK, blockaddr);
@@ -404,6 +418,8 @@ UBYTE sdcmd_write_block(ULONG iobase, ULONG blockaddr, CONST UBYTE *buff)
     UBYTE token = 0xfe;
     UBYTE r1;
 
+    debug("blockaddr=%d", blockaddr);
+
     /* Send write block command */
     sdcmd_send(iobase, SDCMD_WRITE_SINGLE_BLOCK, blockaddr);
     r1 = sdcmd_r1(iobase);
@@ -419,6 +435,11 @@ UBYTE sdcmd_write_blocks(ULONG iobase, ULONG blockaddr, CONST UBYTE *buff, int b
     UBYTE token = 0xfc, stop_token = 0xfd;
     UBYTE r1;
     int i;
+
+    if (blocks == 1)
+        return sdcmd_write_block(iobase, blockaddr, buff);
+
+    debug("blockaddr=%d, blocks=%d", blockaddr, blocks);
 
     /* Send write blocks command */
     sdcmd_send(iobase, SDCMD_WRITE_MULTIPLE_BLOCK, blockaddr);

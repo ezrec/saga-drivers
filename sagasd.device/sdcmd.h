@@ -68,6 +68,8 @@
 #define SDCMD_READ_OCR                  58
 #define SDCMD_CRC_ON_OFF                59
 
+#define SDCMD_VALID                     0x40
+
 
 /* App commands */
 #define SDCMD_SD_SEND_OP_COND   41

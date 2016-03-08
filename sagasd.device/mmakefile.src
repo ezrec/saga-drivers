@@ -44,7 +44,7 @@ SDDIAG_FILES := sddiag sdcmd
 
 %build_module mmake=saga-sd-device \
        modname=sagasd modtype=device \
-       files="$(DEVICE_FILES)"
+       files="$(DEVICE_FILES)" uselibs="romhack"
 
 %common
 #  vim: set shiftwidth=8 noexpandtab: #
