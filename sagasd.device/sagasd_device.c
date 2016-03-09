@@ -33,6 +33,8 @@
 #include <exec/tasks.h>
 #include <exec/io.h>
 
+#include <libraries/expansion.h>
+
 #include <devices/newstyle.h>
 #include <devices/trackdisk.h>
 #include <devices/timer.h>
@@ -284,6 +286,36 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
     return err;
 }
 
+static void SAGASD_Detect(struct Library *SysBase, struct SAGASDUnit *sdu)
+{
+    BOOL present;
+
+    /* Update sdu_Present, regardless */
+    present = sdcmd_present(sdu->sdu_IOBase);
+    if (present != sdu->sdu_Present) {
+        if (present) {
+            UBYTE sderr;
+
+            /* Re-run the identify */
+            sderr = sdcmd_detect(sdu->sdu_IOBase, &sdu->sdu_Identify);
+
+            Forbid();
+            /* Make the drive present. */
+            sdu->sdu_Present = TRUE;
+            sdu->sdu_ChangeNum++;
+            sdu->sdu_Valid = (sderr == 0) ? TRUE : FALSE;
+            debug("========= sdu_Valid: %s", sdu->sdu_Valid ? "TRUE" : "FALSE");
+            debug("========= Blocks: %ld", sdu->sdu_Identify.blocks);
+            Permit();
+        } else {
+            Forbid();
+            sdu->sdu_Present = FALSE;
+            sdu->sdu_Valid = FALSE;
+            Permit();
+        }
+    }
+}
+
 /* This low-priority task handles all the non-quick IO
  */
 static void SAGASD_IOTask(struct Library *SysBase)
@@ -318,6 +350,9 @@ static void SAGASD_IOTask(struct Library *SysBase)
     debug("mport=%p", mport);
     sdu->sdu_MsgPort = status.mn_ReplyPort;
 
+    /* Update status, for the boot node */
+    SAGASD_Detect(SysBase, sdu);
+
     /* Send the 'I'm Ready' message */
     debug("sdu_MsgPort=%p", sdu->sdu_MsgPort);
     PutMsg(mport, &status);
@@ -343,7 +378,8 @@ static void SAGASD_IOTask(struct Library *SysBase)
 
     for (;;) {
         struct IORequest *io;
-        BOOL present;
+
+        SAGASD_Detect(SysBase, sdu);
 
         io = (struct IORequest *)GetMsg(mport);
         if (!io) {
@@ -371,31 +407,6 @@ static void SAGASD_IOTask(struct Library *SysBase)
 
             /* Clean up the timer IO */
             WaitIO(treq);
-        }
-
-        /* Update sdu_Present, regardless */
-        present = sdcmd_present(sdu->sdu_IOBase);
-        if (present != sdu->sdu_Present) {
-            if (present) {
-                UBYTE sderr;
-
-                /* Re-run the identify */
-                sderr = sdcmd_detect(sdu->sdu_IOBase, &sdu->sdu_Identify);
-
-                Forbid();
-                /* Make the drive present. */
-                sdu->sdu_Present = TRUE;
-                sdu->sdu_ChangeNum++;
-                sdu->sdu_Valid = (sderr == 0) ? TRUE : FALSE;
-                debug("========= sdu_Valid: %s", sdu->sdu_Valid ? "TRUE" : "FALSE");
-                debug("========= Blocks: %ld", sdu->sdu_Identify.blocks);
-                Permit();
-            } else {
-                Forbid();
-                sdu->sdu_Present = FALSE;
-                sdu->sdu_Valid = FALSE;
-                Permit();
-            }
         }
 
         /* If there was no io, continue on...
@@ -487,9 +498,11 @@ AROS_LH1(LONG, AbortIO,
 
 
 static void SAGASD_BootNode(
+        struct SAGASDBase *SAGASDBase,
         struct Library *ExpansionBase,
         ULONG unit)
 {
+    struct SAGASDUnit *sdu = &SAGASDBase->sd_Unit[unit];
     TEXT dosdevname[4] = "SD0";
     IPTR pp[4 + DE_BOOTBLOCKS + 1] = {};
     struct DeviceNode *devnode;
@@ -497,30 +510,31 @@ static void SAGASD_BootNode(
     debug("");
 
     dosdevname[2] += unit;
-    debug("Adding bootnode %s", dosdevname);
+    debug("Adding bootnode %s %d x %d", dosdevname,sdu->sdu_Identify.blocks, sdu->sdu_Identify.block_size);
 
     pp[0] = (IPTR)dosdevname;
     pp[1] = (IPTR)"sagasd.device";
     pp[2] = unit;
+    pp[3] = 0;
     pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
-    pp[DE_SIZEBLOCK + 4] = 512 >> 2;
+    pp[DE_SIZEBLOCK + 4] = sdu->sdu_Identify.block_size >> 2;
     pp[DE_NUMHEADS + 4] = 1;
     pp[DE_SECSPERBLOCK + 4] = 1;
-    pp[DE_BLKSPERTRACK + 4] = 1;
+    pp[DE_BLKSPERTRACK + 4] = sdu->sdu_Identify.blocks;
     pp[DE_RESERVEDBLKS + 4] = 2;
     pp[DE_LOWCYL + 4] = 0;
-    pp[DE_HIGHCYL + 4] = 0xffffffff;
-    pp[DE_NUMBUFFERS + 4] = 10;
+    pp[DE_HIGHCYL + 4] = 0;
+    pp[DE_NUMBUFFERS + 4] = 1;
     pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
     pp[DE_MAXTRANSFER + 4] = 0x00200000;
     pp[DE_MASK + 4] = 0xFFFFFFFE;
     pp[DE_BOOTPRI + 4] = 5 - (unit * 10);
-    pp[DE_DOSTYPE + 4] = 0;
+    pp[DE_DOSTYPE + 4] = 0x444f5303;
     pp[DE_BOOTBLOCKS + 4] = 2;
     devnode = MakeDosNode(pp);
 
     if (devnode)
-   	AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
+   	AddBootNode(pp[DE_BOOTPRI + 4], 0 & ADNF_STARTPROC, devnode, NULL);
 }
 
 #define PUSH(task, type, value) do {\
@@ -588,7 +602,7 @@ static void SAGASD_InitUnit(struct SAGASDBase * SAGASDBase, int id)
         }
     }
 
-    debug("id=%08x enabled=%d", id, SAGASDBase->sd_Unit[id].sdu_Enabled ? 1 : 0);
+    debug("unit=%d enabled=%d", id, SAGASDBase->sd_Unit[id].sdu_Enabled ? 1 : 0);
 }
 
 static int GM_UNIQUENAME(init)(struct SAGASDBase * SAGASDBase)
@@ -596,7 +610,7 @@ static int GM_UNIQUENAME(init)(struct SAGASDBase * SAGASDBase)
     struct Library *SysBase = SAGASDBase->sd_ExecBase;
     struct Library *ExpansionBase;
     ULONG i;
- 
+
     debug("");
 
     ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
@@ -608,8 +622,8 @@ static int GM_UNIQUENAME(init)(struct SAGASDBase * SAGASDBase)
 
     /* Only add bootnode if recalibration succeeded */
     for (i = 0; i < SAGASD_UNITS; i++) {
-	if (SAGASDBase->sd_Unit[i].sdu_Enabled)
-	    SAGASD_BootNode(ExpansionBase, i);
+	if (SAGASDBase->sd_Unit[i].sdu_Valid)
+	    SAGASD_BootNode(SAGASDBase, ExpansionBase, i);
     }
 
     CloseLibrary((struct Library *)ExpansionBase);
