@@ -174,6 +174,14 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
     debug("IO %p Start, io_Flags = %d, io_Command = %d", io, io->io_Flags, io->io_Command);
 
     switch (io->io_Command) {
+    case CMD_CLEAR:     /* Invalidate read buffer */
+        iostd->io_Actual = 0;
+        err = 0;
+        break;
+    case CMD_UPDATE:    /* Flush write buffer */
+        iostd->io_Actual = 0;
+        err = 0;
+        break;
     case NSCMD_DEVICEQUERY:
         if (len < sizeof(*nsqr)) {
             err = IOERR_BADLENGTH;
@@ -243,7 +251,7 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
     case TD_MOTOR:
         // FIXME: Tie in with power management
         iostd->io_Actual = 1;
-        err = TRUE;
+        err = 0;
         break;
     case CMD_WRITE:
         off64  = iotd->iotd_Req.io_Offset;

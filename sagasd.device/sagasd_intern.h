@@ -20,6 +20,7 @@
 struct SAGASDBase {
     struct Device       sd_Device;
     struct Library *    sd_ExecBase;
+    IPTR                sd_SegList;
     struct SAGASDUnit {
         struct Unit sdu_Unit;
         struct Task sdu_Task;
