@@ -54,6 +54,7 @@ struct SAGABase {
 
     struct BoardInfo *  sc_BoardInfo;   /* Only one board! */
     struct Library *    sc_ExecBase;
+    IPTR                sc_SegList;
 };
 
 /* Marks a sc_CLUT entry as valid */
