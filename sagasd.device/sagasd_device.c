@@ -507,6 +507,9 @@ static void SAGASD_BootNode(
     IPTR pp[4 + DE_BOOTBLOCKS + 1] = {};
     struct DeviceNode *devnode;
 
+    if (1)
+        return;
+
     debug("");
 
     dosdevname[2] += unit;
