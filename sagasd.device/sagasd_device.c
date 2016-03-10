@@ -64,6 +64,7 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
     ULONG len = iotd->iotd_Req.io_Length;
     ULONG block_size, bmask;
     UBYTE sderr;
+    BOOL is_sdhc = (sdu->sdu_Identify.ocr & SDOCRF_HCS) ? TRUE : FALSE;
 
     debug("");
 
@@ -96,6 +97,10 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     debug("%s: block=%ld, blocks=%ld", is_write ? "Write" : "Read", (ULONG)off64, len);
+
+    /* If not SDHC format, bring back to block size */
+    if (!is_sdhc)
+        off64 *= block_size;
 
     /* Do the IO */
     if (is_write) {
@@ -236,10 +241,10 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
         /* Linear "single track" device */
         geom->dg_SectorSize   = sdu->sdu_Identify.block_size;
         geom->dg_TotalSectors = sdu->sdu_Identify.blocks;
-        geom->dg_Cylinders    = 1;
-        geom->dg_CylSectors   = sdu->sdu_Identify.blocks;
-        geom->dg_Heads        = 1;
-        geom->dg_TrackSectors = sdu->sdu_Identify.blocks;
+        geom->dg_Cylinders    = sdu->sdu_Identify.blocks / 1024;
+        geom->dg_CylSectors   = 1024;
+        geom->dg_Heads        = 16;
+        geom->dg_TrackSectors = sdu->sdu_Identify.blocks / 64;
         geom->dg_BufMemType   = MEMF_PUBLIC;
         geom->dg_DeviceType   = DG_DIRECT_ACCESS;
         geom->dg_Flags        = DGF_REMOVABLE;
@@ -521,12 +526,12 @@ static void SAGASD_BootNode(
     pp[3] = 0;
     pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
     pp[DE_SIZEBLOCK + 4] = sdu->sdu_Identify.block_size >> 2;
-    pp[DE_NUMHEADS + 4] = 1;
+    pp[DE_NUMHEADS + 4] = 16;
     pp[DE_SECSPERBLOCK + 4] = 1;
-    pp[DE_BLKSPERTRACK + 4] = sdu->sdu_Identify.blocks;
+    pp[DE_BLKSPERTRACK + 4] = 64;
     pp[DE_RESERVEDBLKS + 4] = 2;
     pp[DE_LOWCYL + 4] = 0;
-    pp[DE_HIGHCYL + 4] = 0;
+    pp[DE_HIGHCYL + 4] = sdu->sdu_Identify.blocks / 1024;
     pp[DE_NUMBUFFERS + 4] = 1;
     pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
     pp[DE_MAXTRANSFER + 4] = 0x00200000;

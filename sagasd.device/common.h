@@ -41,7 +41,7 @@ static inline UBYTE Read8(IPTR addr)
     return *(volatile UBYTE *)addr;
 }
 
-static inline VOID Write8(IPTR addr, ULONG value)
+static inline VOID Write8(IPTR addr, UBYTE value)
 {
     bug("0x%06lx <= 0x%08lx\n", addr, value);
     if (!SIMULATE) {

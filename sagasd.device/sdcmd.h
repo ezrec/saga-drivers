@@ -43,19 +43,21 @@
 #define SDERRF_ERASERES (1 << 1)
 #define SDERRF_IDLE     (1 << 0)
 
-#define SDOCRF_MAX_3_6V     (1 << 23)
-#define SDOCRF_MAX_3_5V     (1 << 22)
-#define SDOCRF_MAX_3_4V     (1 << 21)
-#define SDOCRF_MAX_3_3V     (1 << 20)
-#define SDOCRF_MAX_3_2V     (1 << 19)
-#define SDOCRF_MAX_3_1V     (1 << 18)
-#define SDOCRF_MAX_3_0V     (1 << 17)
-#define SDOCRF_MAX_2_9V     (1 << 16)
-#define SDOCRF_MAX_2_8V     (1 << 15)
+#define SDOCRF_HCS         (1UL << 30)   /* Uses block, not byte, addressing */
+#define SDOCRF_MAX_3_6V     (1UL << 23)
+#define SDOCRF_MAX_3_5V     (1UL << 22)
+#define SDOCRF_MAX_3_4V     (1UL << 21)
+#define SDOCRF_MAX_3_3V     (1UL << 20)
+#define SDOCRF_MAX_3_2V     (1UL << 19)
+#define SDOCRF_MAX_3_1V     (1UL << 18)
+#define SDOCRF_MAX_3_0V     (1UL << 17)
+#define SDOCRF_MAX_2_9V     (1UL << 16)
+#define SDOCRF_MAX_2_8V     (1UL << 15)
 
 /* Base commands */
-#define SDCMD_RESET                     0
+#define SDCMD_GO_IDLE_STATE             0
 #define SDCMD_SEND_OP_COND              1
+#define SDCMD_SEND_IF_COND              8
 #define SDCMD_SEND_CSD                  9
 #define SDCMD_SEND_CID                  10
 #define SDCMD_STOP_TRANSMISSION         12
@@ -89,20 +91,21 @@ UBYTE sdcmd_asend(ULONG iobase, UBYTE acmd, ULONG arg);
 
 UBYTE sdcmd_r1(ULONG iobase);
 UBYTE sdcmd_r2(ULONG iobase, UBYTE *r2);
-UBYTE sdcmd_r3(ULONG iobase, LONG *ocr);
+UBYTE sdcmd_r3(ULONG iobase, ULONG *ocr);
+UBYTE sdcmd_r7(ULONG iobase, ULONG *ifcond);
 
 UBYTE sdcmd_read_packet(ULONG iobase, UBYTE *buff, int len);
 UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len);
 UBYTE sdcmd_stop_transmission(ULONG iobase);
 
 /* Disk-like interface */
-
 struct sdcmd_info {
     ULONG block_size;
     ULONG blocks;
     BOOL  read_only;
 
-    /* Raw CSD and CID data */
+    /* Raw OCR, CSD and CID data */
+    ULONG ocr;
     UBYTE csd[16];
     UBYTE cid[16];
 };
@@ -115,11 +118,16 @@ BOOL  sdcmd_present(ULONG iobase);
  */
 UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info);
 
-UBYTE sdcmd_read_block(ULONG iobase, ULONG blockaddr, UBYTE *buff);
-UBYTE sdcmd_read_blocks(ULONG iobase, ULONG blockaddr, UBYTE *buff, int blocks);
+/* NOTE: Depending on SDOCRF_HCS, you will need to use either
+ *       SDOCRF_HCS == 0   => addr is in bytes
+ *     or
+ *       SDOCRF_HCS == 1   => addr is in blocks
+ */
+UBYTE sdcmd_read_block(ULONG iobase, ULONG addr, UBYTE *buff);
+UBYTE sdcmd_read_blocks(ULONG iobase, ULONG addr, UBYTE *buff, int blocks);
 
-UBYTE sdcmd_write_block(ULONG iobase, ULONG blockaddr, CONST UBYTE *buff);
-UBYTE sdcmd_write_blocks(ULONG iobase, ULONG blockaddr, CONST UBYTE *buff, int blocks);
+UBYTE sdcmd_write_block(ULONG iobase, ULONG addr, CONST UBYTE *buff);
+UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks);
 
 #endif /* SDCMD_H */
 
