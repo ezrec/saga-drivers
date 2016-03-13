@@ -33,6 +33,7 @@
 #define SAGA_VIDEO_FORMAT_RGB15      3       /* -|R5|G5|B5 */
 #define SAGA_VIDEO_FORMAT_RGB24      4       /* R8|G8|B8 */
 #define SAGA_VIDEO_FORMAT_RGB32      5       /* -|R8|G8|B8 */
+#define SAGA_VIDEO_FORMAT_YUV422     6       /* Y4|U2|V2 */
 
 #define SAGA_VIDEO_DBLSCAN_OFF       0
 #define SAGA_VIDEO_DBLSCAN_X         1

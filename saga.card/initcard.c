@@ -117,6 +117,7 @@ static void add_resolution(struct BoardInfo *bi, ULONG displayid, const struct M
 
     bi->BitsPerCannon = 8;
     bi->RGBFormats = RGBFF_CLUT |
+                     RGBFF_Y4U2V2 |
                      RGBFF_R5G5B5 |
                      RGBFF_R5G6B5 |
                      RGBFF_R8G8B8 |
