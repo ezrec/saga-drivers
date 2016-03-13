@@ -41,22 +41,24 @@
     struct SAGABase *sc = (struct SAGABase *)bi->CardBase;
     UBYTE format;
 
-    debug("");
+    debug("RGBFormat: %ld", (long)RGBFormat);
 
-    if ((1 << RGBFormat) & RGBFF_Y4U2V2) {
-        format = SAGA_VIDEO_FORMAT_YUV422;
-    } else if ((1 << RGBFormat) & RGBMASK_8BIT) {
+    if (RGBFormat == RGBFB_CLUT) {
         format = SAGA_VIDEO_FORMAT_CLUT8;
-    } else if ((1 << RGBFormat) & RGBMASK_15BIT) {
+    } else if (RGBFormat == RGBFB_R5G5B5) {
         format = SAGA_VIDEO_FORMAT_RGB15;
-    } else if ((1 << RGBFormat) & RGBMASK_16BIT) {
+    } else if (RGBFormat == RGBFB_R5G6B5) {
         format = SAGA_VIDEO_FORMAT_RGB16;
-    } else if ((1 << RGBFormat) & RGBMASK_24BIT) {
+    } else if (RGBFormat == RGBFB_R8G8B8) {
         format = SAGA_VIDEO_FORMAT_RGB24;
-    } else if ((1 << RGBFormat) & RGBMASK_32BIT) {
+    } else if (RGBFormat == RGBFB_A8R8G8B8) {
         format = SAGA_VIDEO_FORMAT_RGB32;
+    } else if (RGBFormat == RGBFF_Y4U2V2) {
+        format = SAGA_VIDEO_FORMAT_YUV422;
     } else
         return FALSE;
+
+    debug("SAGA format: %ld", (long)format);
 
     sc->sc_Format = format;
 
