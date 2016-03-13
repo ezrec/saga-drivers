@@ -40,7 +40,12 @@
 
     debug("RGBFormat=%ld", RGBFormat);
 
-    return RGBMASK_8BIT | RGBMASK_15BIT | RGBMASK_16BIT | RGBMASK_24BIT | RGBMASK_32BIT | RGBFF_Y4U2V2;
+    return RGBFF_CLUT |
+           RGBFF_R8G8B8 |
+           RGBFF_A8R8G8B8 |
+           RGBFF_R5G6B5 |
+           RGBFF_R5G5B5 |
+           RGBFF_Y4U2V2;
 
     AROS_LIBFUNC_EXIT
 }
