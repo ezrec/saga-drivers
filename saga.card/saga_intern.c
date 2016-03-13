@@ -38,7 +38,7 @@ void dump_ModeInfo(struct ModeInfo *mi)
     bug("  Width: %ld\n", mi->Width);
     bug("  Height: %ld\n", mi->Height);
     bug("  Depth: %ld\n", mi->Depth);
-    bug("  Flags: %ld\n", mi->Flags);
+    bug("  Flags: 0x%02lx\n", mi->Flags);
     bug("  HorTotal: %ld\n", mi->HorTotal);
     bug("  HorBlankSize: %ld\n", mi->HorBlankSize);
     bug("  HorSyncStart: %ld\n", mi->HorSyncStart);
@@ -75,10 +75,10 @@ void dump_BoardInfo(struct BoardInfo *bi)
     bug("  GraphicsControllerType: %lu\n", (unsigned long)bi->GraphicsControllerType);
     bug("  MoniSwitch: %lu\n", (unsigned long)bi->MoniSwitch);
     bug("  BitsPerCannon: %lu\n", (unsigned long)bi->BitsPerCannon);
-    bug("  BoardFlags: %lu\n", (unsigned long)bi->BoardFlags);
-    bug("  SoftSpriteFlags: %lu\n", (unsigned long)bi->SoftSpriteFlags);
-    bug("  ChipFlags: %lu\n", (unsigned long)bi->ChipFlags);
-    bug("  CardFlags: %lu\n", (unsigned long)bi->CardFlags);
+    bug("  BoardFlags: 0x%02lx\n", (unsigned long)bi->BoardFlags);
+    bug("  SoftSpriteFlags: 0x%02lx\n", (unsigned long)bi->SoftSpriteFlags);
+    bug("  ChipFlags: 0x%02lx\n", (unsigned long)bi->ChipFlags);
+    bug("  CardFlags: 0x%02lx\n", (unsigned long)bi->CardFlags);
     bug("  BoardNum: %lu\n", (unsigned long)bi->BoardNum);
     bug("  RGBFormats: %lu\n", (unsigned long)bi->RGBFormats);
     //UWORD               MaxHorValue[MAXMODES];
