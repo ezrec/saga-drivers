@@ -53,27 +53,57 @@ UWORD crc16(UWORD crc, UBYTE byte)
 {
     return crc;
 }
+
+static UBYTE sdcmd_out(ULONG iobase, UBYTE data)
+{
+    Write8(iobase + SAGA_SD_DATA, data);
+
+    return (UBYTE)Read16(iobase + SAGA_SD_DATA);
+}
+
+static UBYTE sdcmd_in(ULONG iobase)
+{
+    return sdcmd_out(iobase, 0xff);
+}
+
             
+BOOL sdcmd_present(ULONG iobase)
+{
+    UBYTE tmp;
+    
+    tmp = Read16(iobase + SAGA_SD_STAT);
+    return (tmp & SAGA_SD_STAT_NCD) ? FALSE : TRUE;
+}
+
+VOID sdcmd_select(ULONG iobase, BOOL cs)
+{
+    UWORD val;
+
+    val = SAGA_SD_CTL_NCS(cs ? 0 : 1);
+    Write8(iobase + SAGA_SD_CTL, val);
+}
 
 void sdcmd_send(ULONG iobase, UBYTE cmd, ULONG arg)
 {
     int i;
     UBYTE crc;
 
+    sdcmd_select(iobase, TRUE);
+
     cmd = (cmd & 0x3f) | SDCMD_VALID;
 
     crc = crc7(0, cmd);
 
-    Write8(iobase + SAGA_SD_DATA, (cmd & 0x3f) | 0x40);
+    sdcmd_out(iobase, (cmd & 0x3f) | 0x40);
 
     for (i = 0; i < 4; i++, arg <<= 8) {
         UBYTE byte = (arg >> 24) & 0xff;
         crc = crc7(crc, byte);
 
-        Write8(iobase + SAGA_SD_DATA, byte);
+        sdcmd_out(iobase, byte);
     }
 
-    Write8(iobase + SAGA_SD_DATA, (crc << 1) | 1);
+    sdcmd_out(iobase, (crc << 1) | 1);
 }
 
 UBYTE sdcmd_r1(ULONG iobase)
@@ -82,9 +112,11 @@ UBYTE sdcmd_r1(ULONG iobase)
     int i;
 
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        r1 = Read8(iobase + SAGA_SD_DATA);
-        if (!(r1 & SDERRF_TIMEOUT))
+        r1 = sdcmd_in(iobase);
+        if (!(r1 & SDERRF_TIMEOUT)) {
+            sdcmd_select(iobase, r1 == 0);
             return r1;
+        }
     }
 
     return SDERRF_TIMEOUT;
@@ -94,8 +126,12 @@ UBYTE sdcmd_r2(ULONG iobase, UBYTE *r2)
 {
     UBYTE r1;
 
-    r1 = Read8(iobase + SAGA_SD_DATA);
-    *r2 = Read8(iobase + SAGA_SD_DATA);
+    r1 = sdcmd_r1(iobase);
+    if (r1)
+        return r1;
+
+    *r2 = sdcmd_in(iobase);
+    sdcmd_select(iobase, FALSE);
 
     return r1;
 }
@@ -107,12 +143,17 @@ UBYTE sdcmd_r3(ULONG iobase, ULONG *ocr)
     int i;
 
     r1 = sdcmd_r1(iobase);
+    if (r1)
+        return r1;
+
     for (i = 0; i < 4; i++) {
         r3 <<= 8;
-        r3 |= Read8(iobase + SAGA_SD_DATA);
-        debug("r3=0x%08x, i=%d\n", r3, i);
+        r3 |= sdcmd_in(iobase);
     }
 
+    sdcmd_select(iobase, FALSE);
+
+    debug("r3=0x%08x\n", r3);
     *ocr = r3;
 
     return r1;
@@ -130,10 +171,12 @@ UBYTE sdcmd_r7(ULONG iobase, ULONG *ifcond)
 
     for (i = 0; i < 4; i++) {
         r7 <<= 8;
-        r7 |= Read8(iobase + SAGA_SD_DATA);
-        debug("r7=0x%08x, i=%d\n", r7, i);
+        r7 |= sdcmd_in(iobase);
     }
 
+    sdcmd_select(iobase, FALSE);
+
+    debug("r7=0x%08x\n", r7);
     *ifcond = r7;
 
     return r1;
@@ -141,14 +184,13 @@ UBYTE sdcmd_r7(ULONG iobase, ULONG *ifcond)
 
 UBYTE sdcmd_asend(ULONG iobase, UBYTE acmd, ULONG arg)
 {
-    UBYTE err;
+    UBYTE r1;
 
     /* Next command is an app command.. */
     sdcmd_send(iobase, SDCMD_APP_CMD, 0);
-    err = sdcmd_r1(iobase);
-
-    if (err)
-        return err;
+    r1 = sdcmd_r1(iobase);
+    if (r1)
+        return r1;
 
     sdcmd_send(iobase, acmd, arg);
 
@@ -162,27 +204,33 @@ UBYTE sdcmd_read_packet(ULONG iobase, UBYTE *buff, int len)
     UWORD crc, tmp;
     int i;
 
+    sdcmd_select(iobase, TRUE);
+
     /* Wait for the Data Token */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        byte = Read8(iobase + SAGA_SD_DATA);
+        byte = sdcmd_in(iobase);
         if (byte == token)
             break;
     }
 
-    if (i == SDCMD_TIMEOUT)
+    if (i == SDCMD_TIMEOUT) {
+        sdcmd_select(iobase, FALSE);
         return SDERRF_TIMEOUT;
+    }
 
     crc = crc16(0, token);
 
     for (i = 0; i < len; i++, buff++) {
-        byte = Read8(iobase + SAGA_SD_DATA);
+        byte = sdcmd_in(iobase);
         crc16(crc, byte);
         *buff = byte;
     }
 
     /* Read the CRC16 */
-    tmp = (UWORD)Read8(iobase + SAGA_SD_DATA) << 8;
-    tmp |= Read8(iobase + SAGA_SD_DATA);
+    tmp = (UWORD)sdcmd_in(iobase) << 8;
+    tmp |= sdcmd_in(iobase);
+
+    sdcmd_select(iobase, FALSE);
 
     if (tmp != crc)
         return SDERRF_CRC;
@@ -200,14 +248,18 @@ UBYTE sdcmd_stop_transmission(ULONG iobase)
     /* Read response */
     r1 = sdcmd_r1(iobase);
 
+    sdcmd_select(iobase, TRUE);
+
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        tmp = Read8(iobase + SAGA_SD_DATA);
+        tmp = sdcmd_in(iobase);
         if (tmp == 0xff)
-            return r1;
+           break;
     }
 
-    return SDERRF_TIMEOUT;
+    sdcmd_select(iobase, FALSE);
+
+    return (tmp == 0xff) ? r1 : SDERRF_TIMEOUT;
 }
 
 UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
@@ -216,26 +268,28 @@ UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
     UWORD crc;
     int i;
 
+    sdcmd_select(iobase, TRUE);
+
     /* Send a spacing byte */
-    Write8(iobase + SAGA_SD_DATA, 0xff);
+    sdcmd_out(iobase, 0xff);
 
     /* Start the data packet */
-    Write8(iobase + SAGA_SD_DATA, token);
+    sdcmd_out(iobase, token);
     crc = crc16(0, token);
 
     /* Send the block */
     for (i = 0; i < SDSIZ_BLOCK; i++, buff++) {
         byte = *buff;
-        Write8(iobase + SAGA_SD_DATA, byte);
+        sdcmd_out(iobase, byte);
         crc = crc16(crc, byte);
     }
 
     /* Send the CRC16, MSB first */
-    Write8(iobase + SAGA_SD_DATA, (crc >> 8) & 0xff);
-    Write8(iobase + SAGA_SD_DATA, (crc >> 0) & 0xff);
+    sdcmd_out(iobase, (crc >> 8) & 0xff);
+    sdcmd_out(iobase, (crc >> 0) & 0xff);
 
     /* Read the Data Response */
-    byte = Read8(iobase + SAGA_SD_DATA);
+    byte = sdcmd_in(iobase);
     if ((byte & SDDRS_VALID_MASK) != SDDRS_VALID) {
         /* Terminate the read early */
         sdcmd_stop_transmission(iobase);
@@ -247,10 +301,12 @@ UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
     /* Wait for the idle pattern */
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        UBYTE tmp = Read8(iobase + SAGA_SD_DATA);
+        UBYTE tmp = sdcmd_in(iobase);
         if (tmp == 0xff)
             break;
     }
+
+    sdcmd_select(iobase, FALSE);
 
     return (i == SDCMD_TIMEOUT) ? SDERRF_TIMEOUT : r1;
 }
@@ -276,15 +332,6 @@ static ULONG bits(UBYTE *mask, int start, int len)
     return ret;
 }
 
-BOOL sdcmd_present(ULONG iobase)
-{
-    UBYTE tmp;
-    
-    tmp = Read16(iobase + SAGA_SD_STAT);
-    return (tmp & SAGA_SD_STAT_NCD) ? FALSE : TRUE;
-}
-
-
 /* If non-zero, filled in the total size in blocks of the device
  */
 UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
@@ -300,14 +347,14 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
         return ~0;
 
     /* Emit at least 74 clocks of idle */
-    Write8(iobase + SAGA_SD_CTL, SAGA_SD_CTL_NCS(0));
+    sdcmd_select(iobase, TRUE);
     for (i = 0; i < 10; i++)
-        Write8(iobase + SAGA_SD_DATA, 0xff);
-    Write8(iobase + SAGA_SD_CTL, SAGA_SD_CTL_NCS(1));
-    Write8(iobase + SAGA_SD_DATA, 0xff);
+        sdcmd_out(iobase, 0xff);
+    sdcmd_select(iobase, FALSE);
 
-    /* Enable our chip select */
-    Write8(iobase + SAGA_SD_CTL, SAGA_SD_CTL_NCS(0));
+    /* Stuff two idle bytes while deasserted */
+    sdcmd_out(iobase, 0xff);
+    sdcmd_out(iobase, 0xff);
 
     /* Put into idle state */
     sdcmd_send(iobase, SDCMD_GO_IDLE_STATE, 0);
@@ -495,7 +542,7 @@ UBYTE sdcmd_write_block(ULONG iobase, ULONG addr, CONST UBYTE *buff)
 UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks)
 {
     UBYTE token = 0xfc, stop_token = 0xfd;
-    UBYTE r1;
+    UBYTE tmp, r1;
     int i;
 
     if (blocks == 1)
@@ -515,20 +562,24 @@ UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks
             break;
     }
 
+    sdcmd_select(iobase, TRUE);
+
     /* Send stop token */
-    Write8(iobase + SAGA_SD_DATA, stop_token);
+    sdcmd_out(iobase, stop_token);
 
     /* Read 'stuff' byte */
-    Read8(iobase + SAGA_SD_DATA);
+    sdcmd_in(iobase);
 
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        UBYTE tmp = Read8(iobase + SAGA_SD_DATA);
+        tmp = sdcmd_in(iobase);
         if (tmp == 0xff)
-            return r1;
+            break;
     }
 
-    return SDERRF_TIMEOUT;
+    sdcmd_select(iobase, FALSE);
+
+    return (tmp == 0xff) ? r1 : SDERRF_TIMEOUT;
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

@@ -28,13 +28,13 @@
 
 #define SAGA_SD_BASE            0xde0000        /* Base address */
 
-#define SAGA_SD_CTL             0x0000          /* UWORD, Write only */
+#define SAGA_SD_DATA            0x0000          /* Read as UBYTE/Write as UBYTE */
+
+#define SAGA_SD_CTL             0x0004          /* UWORD, Write only */
 #define   SAGA_SD_CTL_NCS(x)    (((x) & 1) << 0)
 
-#define SAGA_SD_STAT            0x0002          /* UWORD, Read only */
+#define SAGA_SD_STAT            0x0006          /* UWORD, Read only */
 #define   SAGA_SD_STAT_NCD      (1 << 0)        /* nCardDetect */
-
-#define SAGA_SD_DATA            0x0004          /* UBYTE, Read/Write */
 
 #endif /* SAGA_SD_H */
 /* vim: set shiftwidth=4 expandtab:  */

@@ -36,6 +36,25 @@
 
 #include <saga/sd.h>
 
+struct Library *SysBase, *DOSBase;
+
+static void setBases(struct ExecBase *pSysBase, struct DosLibrary *pDOSBase)
+{
+    SysBase = (struct Library *)pSysBase;
+    DOSBase = (struct Library *)pDOSBase;
+}
+
+int kprintf(const char *format, ...)
+{
+    UBYTE buffer[1024];
+    const ULONG m68k_string_sprintf = 0x16c04e75;
+
+    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
+    Printf("%s", buffer);
+
+    return strlen(buffer);
+}
+
 AROS_SH1H(SDDiag , 0.1,                 "SAGA SD Diagnostic\n",
 AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"))
 {
@@ -45,6 +64,8 @@ AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"))
     struct sdcmd_info info;
     int i;
     UBYTE err;
+
+    setBases(SysBase, DOSBase);
 
     err = sdcmd_detect(iobase, &info);
 
@@ -61,9 +82,10 @@ AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"))
             Printf("%ldG\n", (info.blocks + 1024*1024*2-1) / 1024 / 1024 / 2);
         }
 
+        Printf("OCR: %08lx\n", info.ocr);
         Printf("CID:");
         for (i = 0; i < 16; i++)
-            Printf(" %02lx", info.csd[i]);
+            Printf(" %02lx", info.cid[i]);
         Printf("\n");
         Printf("CSD:");
         for (i = 0; i < 16; i++)

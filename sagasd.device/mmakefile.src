@@ -38,6 +38,8 @@ SDDIAG_FILES := sddiag sdcmd
 
 #MM- saga-sd: saga-sd-c saga-sd-device
 
+#MM- saga-sd-quick: saga-sd-c-quick saga-sd-device-quick
+
 %build_prog mmake=saga-sd-c progname=SDDiag \
       files="$(SDDIAG_FILES)" targetdir="$(AROS_C)" \
       usestartup=no

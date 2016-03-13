@@ -30,7 +30,7 @@
 
 #if DEBUG
 #define bug(x,args...)   kprintf(x ,##args)
-#define debug(x,args...) bug("%s:%d " x "\n", __func__, __LINE__ ,##args)
+#define debug(x,args...) bug("%s:%ld " x "\n", __func__, (unsigned long)__LINE__ ,##args)
 #else
 #define bug(x,args...)   do { } while (0)
 #define debug(x,args...) do { } while (0)
@@ -38,12 +38,16 @@
 
 static inline UBYTE Read8(IPTR addr)
 {
-    return *(volatile UBYTE *)addr;
+    UBYTE val;
+    
+    val = *(volatile UBYTE *)addr;
+    bug("0x%06lx => 0x%02lx\n", addr, val);
+    return val;
 }
 
 static inline VOID Write8(IPTR addr, UBYTE value)
 {
-    bug("0x%06lx <= 0x%08lx\n", addr, value);
+    bug("0x%06lx <= 0x%02lx\n", addr, value);
     if (!SIMULATE) {
         *(volatile UBYTE *)addr = value;
     }
@@ -51,7 +55,11 @@ static inline VOID Write8(IPTR addr, UBYTE value)
 
 static inline UWORD Read16(IPTR addr)
 {
-    return *(volatile UWORD *)addr;
+    UWORD val;
+
+    val = *(volatile UWORD *)addr;
+    bug("0x%06lx => 0x%04lx\n", addr, val);
+    return val;
 }
 
 static inline VOID Write16(IPTR addr, UWORD value)
@@ -62,7 +70,22 @@ static inline VOID Write16(IPTR addr, UWORD value)
     }
 }
 
+static inline ULONG Read32(IPTR addr)
+{
+    ULONG val;
 
+    val = *(volatile ULONG *)addr;
+    bug("0x%06lx => 0x%08lx\n", addr, val);
+    return val;
+}
+
+static inline VOID Write32(IPTR addr, ULONG value)
+{
+    bug("0x%06lx <= 0x%08lx\n", addr, value);
+    if (!SIMULATE) {
+        *(volatile ULONG *)addr = value;
+    }
+}
 
 #endif /* COMMON_H */
 /* vim: set shiftwidth=4 expandtab:  */
