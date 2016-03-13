@@ -43,7 +43,9 @@
 
     debug("");
 
-    if ((1 << RGBFormat) & RGBMASK_8BIT) {
+    if ((1 << RGBFormat) & RGBFF_Y4U2V2) {
+        format = SAGA_VIDEO_FORMAT_YUV422;
+    } else if ((1 << RGBFormat) & RGBMASK_8BIT) {
         format = SAGA_VIDEO_FORMAT_CLUT8;
     } else if ((1 << RGBFormat) & RGBMASK_15BIT) {
         format = SAGA_VIDEO_FORMAT_RGB15;
@@ -53,8 +55,6 @@
         format = SAGA_VIDEO_FORMAT_RGB24;
     } else if ((1 << RGBFormat) & RGBMASK_32BIT) {
         format = SAGA_VIDEO_FORMAT_RGB32;
-    } else if ((1 << RGBFormat) & RGBFF_Y4U2V2) {
-        format = SAGA_VIDEO_FORMAT_YUV422;
     } else
         return FALSE;
 

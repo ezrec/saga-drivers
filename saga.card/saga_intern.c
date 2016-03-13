@@ -224,6 +224,8 @@ int format2bpp(RGBFTYPE format)
         return 1;
     if ((1UL << format) & (RGBMASK_15BIT | RGBMASK_16BIT))
         return 2;
+    if ((1UL << format) & RGBFF_Y4U2V2)
+        return 2;
     if ((1UL << format) & RGBMASK_24BIT)
         return 3;
     if ((1UL << format) & RGBMASK_32BIT)
