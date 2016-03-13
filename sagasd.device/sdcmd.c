@@ -58,7 +58,7 @@ static UBYTE sdcmd_out(ULONG iobase, UBYTE data)
 {
     Write8(iobase + SAGA_SD_DATA, data);
 
-    return (UBYTE)Read16(iobase + SAGA_SD_DATA);
+    return (UBYTE)Read8(iobase + SAGA_SD_DATA);
 }
 
 static UBYTE sdcmd_in(ULONG iobase)
@@ -80,7 +80,7 @@ VOID sdcmd_select(ULONG iobase, BOOL cs)
     UWORD val;
 
     val = SAGA_SD_CTL_NCS(cs ? 0 : 1);
-    Write8(iobase + SAGA_SD_CTL, val);
+    Write16(iobase + SAGA_SD_CTL, val);
 }
 
 void sdcmd_send(ULONG iobase, UBYTE cmd, ULONG arg)
