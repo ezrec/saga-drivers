@@ -34,6 +34,7 @@ struct SAGASDBase {
         BOOL sdu_Present;               /* Is a device detected? */
         BOOL sdu_Valid;                 /* Is the device ready for IO? */
         BOOL sdu_ReadOnly;              /* Is the device read-only? */
+        BOOL sdu_Motor;                 /* TD_MOTOR state */
         ULONG sdu_ChangeNum;
         struct sdcmd_info sdu_Identify;
 

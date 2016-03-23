@@ -109,6 +109,8 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
         sderr = sdcmd_read_blocks(sdu->sdu_IOBase, (ULONG)off64, data, len);
     }
 
+    debug("sderr=$%02x", sderr);
+
     if (sderr) {
         iostd->io_Actual = 0;
 
@@ -133,6 +135,33 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
     return 0;
 }
 
+#define CMD_NAME(x) if (cmd == x) return #x
+
+static inline const char *cmd_name(int cmd)
+{
+    CMD_NAME(CMD_READ);
+    CMD_NAME(CMD_WRITE);
+    CMD_NAME(CMD_UPDATE);
+    CMD_NAME(CMD_CLEAR);
+    CMD_NAME(TD_ADDCHANGEINT);
+    CMD_NAME(TD_CHANGENUM);
+    CMD_NAME(TD_CHANGESTATE);
+    CMD_NAME(TD_EJECT);
+    CMD_NAME(TD_FORMAT);
+    CMD_NAME(TD_GETDRIVETYPE);
+    CMD_NAME(TD_GETGEOMETRY);
+    CMD_NAME(TD_MOTOR);
+    CMD_NAME(TD_PROTSTATUS);
+    CMD_NAME(TD_READ64);
+    CMD_NAME(TD_REMCHANGEINT);
+    CMD_NAME(TD_WRITE64);
+    CMD_NAME(NSCMD_DEVICEQUERY);
+    CMD_NAME(NSCMD_TD_READ64);
+    CMD_NAME(NSCMD_TD_WRITE64);
+
+    return "Unknown";
+}
+
 /*
  *  Try to do IO commands. All commands which require talking with ahci devices
  *  will be handled slow, that is they will be passed to bus task which will
@@ -150,6 +179,7 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
         TD_CHANGESTATE,
         TD_EJECT,
         TD_FORMAT,
+        TD_GETDRIVETYPE,
         TD_GETGEOMETRY,
         TD_MOTOR,
         TD_PROTSTATUS,
@@ -178,7 +208,7 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
     if (io->io_Error == IOERR_ABORTED)
         return io->io_Error;
 
-    debug("IO %p Start, io_Flags = %d, io_Command = %d", io, io->io_Flags, io->io_Command);
+    debug("IO %p Start, io_Flags = %d, io_Command = %d (%s)", io, io->io_Flags, io->io_Command, cmd_name(io->io_Command));
 
     switch (io->io_Command) {
     case CMD_CLEAR:     /* Invalidate read buffer */
@@ -238,7 +268,6 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
 
         geom = data;
         memset(geom, 0, len);
-        /* Linear "single track" device */
         geom->dg_SectorSize   = sdu->sdu_Identify.block_size;
         geom->dg_TotalSectors = sdu->sdu_Identify.blocks;
         geom->dg_Cylinders    = sdu->sdu_Identify.blocks / 1024;
@@ -257,7 +286,8 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
         break;
     case TD_MOTOR:
         // FIXME: Tie in with power management
-        iostd->io_Actual = 1;
+        iostd->io_Actual = sdu->sdu_Motor;
+        sdu->sdu_Motor = iostd->io_Length ? 1 : 0;
         err = 0;
         break;
     case CMD_WRITE:
