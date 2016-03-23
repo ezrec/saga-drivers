@@ -42,9 +42,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    debug("");
-
     int bpp = format2bpp(RGBFormat);
+
+    debug("mem=0x%lx, width: %ld, x,y = (%ld, %ld), bpp=%ld", (IPTR)mem, width, xoffset, yoffset, bpp);
 
     Write32(SAGA_VIDEO_PLANEPTR, (IPTR)mem + (width * bpp) * yoffset + (xoffset * bpp));
              
