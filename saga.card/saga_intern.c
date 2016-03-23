@@ -220,9 +220,11 @@ void dump_BoardInfo(struct BoardInfo *bi)
 
 int format2bpp(RGBFTYPE format)
 {
-    if ((1UL << format) & RGBMASK_8BIT | RGBFF_Y4U1V1 )
+    if ((1UL << format) & RGBMASK_8BIT)
         return 1;
-    if ((1UL << format) & (RGBMASK_15BIT | RGBMASK_16BIT | RGBFF_Y4U2V2))
+    if ((1UL << format) & (RGBMASK_15BIT | RGBMASK_16BIT))
+        return 2;
+    if ((1UL << format) & RGBFF_Y4U2V2)
         return 2;
     if ((1UL << format) & RGBMASK_24BIT)
         return 3;
