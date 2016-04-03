@@ -31,8 +31,8 @@
 
 #define SDSIZ_BLOCK        512  /* Block size in bytes */
 
-#define SDCMD_TIMEOUT      100
-#define SDCMD_IDLE_RETRY   100
+#define SDCMD_TIMEOUT      10000
+#define SDCMD_IDLE_RETRY   10000
 
 #define SDERRF_TIMEOUT  (1 << 7)
 #define SDERRF_PARAM    (1 << 6)
