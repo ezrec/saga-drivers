@@ -22,12 +22,12 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 # 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
                  -I$(SRCDIR)/$(CURDIR)/../include
 
-USER_CFLAGS := -D__NOLIBBASE__ -DDEBUG=0 -DSIMULATE=0 \
+USER_CFLAGS := -D__NOLIBBASE__ -DDEBUG=1 -DSIMULATE=0 \
                -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 USER_LDFLAGS := -static

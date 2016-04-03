@@ -22,7 +22,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 # 
-include $(TOP)/config/make.cfg
+include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include \
                  -I$(SRCDIR)/$(CURDIR)/../include
