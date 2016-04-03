@@ -66,7 +66,10 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
     UBYTE sderr;
     BOOL is_sdhc = (sdu->sdu_Identify.ocr & SDOCRF_HCS) ? TRUE : FALSE;
 
-    debug("");
+    debug("%s: Flags: $%lx, Command: $%04lx, Offset: $%lx%08lx Length: %5ld, Data: $%08lx",
+            is_write ? "write" : "read",
+            io->io_Flags, io->io_Command,
+            (ULONG)(off64 >> 32), (ULONG)off64, len, data);
 
     block_size = sdu->sdu_Identify.block_size;
     bmask = block_size - 1;
