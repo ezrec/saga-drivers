@@ -30,3 +30,28 @@ use it on an AmigaOS system.
 * Reboot, and use `SYS:Prefs/Picasso96Mode` to attach the SAGA board to the modes
 * Reboot, and use `SYS:Prefs/ScreenMode` to select the SAGA screen mode
 
+## sagasd.card
+
+* Supports SD and SDHC devices
+
+### Compilation
+
+This driver is designed to be compiled via the AROS ABIv1 m68k crosscompiler.
+
+The `saga-sd` __metamake__ target will build the ELF file into your AROS
+target directory, as `AROS:Devs/sagasd.device
+
+Use the AROS `elf2hunk` tool to convert the ELF to AmigaOS HUNK format, to
+use it on an AmigaOS system.
+
+### Installation (AmigaOS)
+
+* Copy the HUNK version of `sagasd.device` to DEVS:
+* Install 'GiggleDisk' from AmiNet for automatic partition support
+* Create a `C:IconX` script with the following content:
+
+```
+Delete DEVS:DOSDrivers/SD?#
+SYS:GiggleDisk/Bin/GiggleDisk DEVICE=sagasd.device UNIT=0 PREFIX=SD TO=DEVS:DOSDrivers
+Mount >NIL: DEVS:DOSDrivers/~(SD#?.info)
+```
