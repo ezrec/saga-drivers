@@ -377,18 +377,15 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
     r1 &= ~SDERRF_IDLE;
     if (!r1) {
         /* Looks like a SDHC card? */
-#if 0
-        if ((r7 & 0x000001ff) != 0x000001aa)
-            return SDERRF_ILLEGAL;
-#endif
-
-        /* Set HCS (SDHC) mode */
-        sdcmd_asend(iobase, SDCMD_SD_SEND_OP_COND, SDOCRF_HCS);
-        r1 = sdcmd_r1(iobase);
-        /* It's ok (and expected) that we are in IDLE state */
-        r1 &= ~SDERRF_IDLE;
-        if (r1)
-            return r1;
+        if ((r7 & 0x000001ff) == 0x000001aa) {
+            /* Set HCS (SDHC) mode */
+            sdcmd_asend(iobase, SDCMD_SD_SEND_OP_COND, SDOCRF_HCS);
+            r1 = sdcmd_r1(iobase);
+            /* It's ok (and expected) that we are in IDLE state */
+            r1 &= ~SDERRF_IDLE;
+            if (r1)
+                return r1;
+        }
     }
 
     /* Wait for card to complete idle */
