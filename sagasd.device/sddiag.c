@@ -36,6 +36,10 @@
 
 #include <saga/sd.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x)   (sizeof(x)/sizeof((x)[0]))
+#endif
+
 struct Library *SysBase, *DOSBase;
 
 static void setBases(struct ExecBase *pSysBase, struct DosLibrary *pDOSBase)
@@ -46,7 +50,7 @@ static void setBases(struct ExecBase *pSysBase, struct DosLibrary *pDOSBase)
 
 int kprintf(const char *format, ...)
 {
-    UBYTE buffer[1024];
+    char buffer[1024];
     const ULONG m68k_string_sprintf = 0x16c04e75;
 
     RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
@@ -55,14 +59,25 @@ int kprintf(const char *format, ...)
     return strlen(buffer);
 }
 
-AROS_SH1H(SDDiag , 0.1,                 "SAGA SD Diagnostic\n",
-AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"))
+ULONG write_buffer[512 * 16 / sizeof(ULONG)];
+ULONG read_buffer[512 * 16 / sizeof(ULONG)];
+
+AROS_SH4H(SDDiag , 0.2,                 "SAGA SD Diagnostic\n",
+AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"),
+AROS_SHAH(ULONG *  , ,PATTERN,/K/N,  0 ,  "Pattern for WRITE testing\n"),
+AROS_SHAH(BOOL     , ,READ,/S,    FALSE, "Perform READ test to last 16 blocks\n"),
+AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\n")
+)
 {
     AROS_SHCOMMAND_INIT
 
     ULONG iobase = SHArg(IOBASE) ? *SHArg(IOBASE) : SAGA_SD_BASE;
+    ULONG pattern = SHArg(PATTERN) ? *SHArg(PATTERN) : 0x5af00000;
+    BOOL readTest = SHArg(READ);
+    BOOL writeTest = SHArg(WRITE);
     struct sdcmd_info info;
-    int i;
+    int i, test_shift;
+    ULONG test_block;
     UBYTE err;
 
     setBases(SysBase, DOSBase);
@@ -93,6 +108,80 @@ AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"))
         Printf("\n");
     } else {
         Printf("SD Card Detection Error: %lx\n", err);
+        return RETURN_FAIL; 
+    }
+
+    test_block = info.blocks - 16;
+    test_shift = (info.ocr & SDOCRF_HCS) ? 0 : 9;
+
+    if (writeTest) {
+        for (i = 0; i < ARRAY_SIZE(write_buffer); i++)
+            write_buffer[i] = pattern + i;
+
+        Printf("WRITE Test: %ld bytes, at block %ld: ",
+                512, test_block);
+
+        err = sdcmd_write_block(iobase, test_block << test_shift, (UBYTE *)&write_buffer[0]);
+        if (err) {
+            Printf("FAILED WRITE, err=0x%02lx\n", err);
+            return RETURN_FAIL;
+        }
+
+        err = sdcmd_read_block(iobase, test_block << test_shift, (UBYTE *)&read_buffer[0]);
+        if (err) {
+            Printf("FAILED READBACK, err=0x%02lx\n", err);
+            return RETURN_FAIL;
+        }
+       
+        err = 0;
+        for (i = 0; i < 512/sizeof(ULONG); i++) {
+            if (read_buffer[i] != write_buffer[i]) {
+                if (!err) {
+                    Printf("FAILED DATA:\n");
+                }
+                err++;
+                Printf("$%04lx: $%08lx [expected $%08lx]\n", i*sizeof(ULONG),
+                        write_buffer[i], read_buffer[i]);
+            }
+        }
+        if (err)
+            return RETURN_FAIL;
+        Printf("PASSED\n");
+
+        Printf("WRITE Test: %ld bytes, at block %ld: ",
+                512*15, test_block);
+
+        err = sdcmd_write_blocks(iobase, (test_block+1) << test_shift, (UBYTE *)&write_buffer[512/sizeof(ULONG)], 15);
+        if (err) {
+            Printf("FAILED WRITE, err=0x%02lx\n", err);
+            return RETURN_FAIL;
+        }
+
+        err = sdcmd_read_blocks(iobase, (test_block+1) << test_shift, (UBYTE *)&read_buffer[512/sizeof(ULONG)], 15);
+        if (err) {
+            Printf("FAILED READBACK, err=0x%02lx\n", err);
+            return RETURN_FAIL;
+        }
+       
+        err = 0;
+        for (i = 0; i < 15 * 512/sizeof(ULONG); i++) {
+            if (read_buffer[512/sizeof(ULONG) + i] !=
+                write_buffer[512/sizeof(ULONG) + i]) {
+                if (!err) {
+                    Printf("FAILED DATA:\n");
+                }
+                err++;
+                Printf("$%04lx: $%08lx [expected $%08lx]\n", i*sizeof(ULONG),
+                        write_buffer[i], read_buffer[i]);
+            }
+        }
+        if (err)
+            return RETURN_FAIL;
+
+        Printf("PASSED\n");
+    }
+
+    if (readTest) {
     }
 
     return RETURN_OK;
