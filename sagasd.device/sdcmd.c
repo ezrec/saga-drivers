@@ -257,19 +257,32 @@ UBYTE sdcmd_stop_transmission(ULONG iobase)
     int i;
 
     sdcmd_send(iobase, SDCMD_STOP_TRANSMISSION, 0);
+
+    /* Read the stuff byte */
+    sdcmd_in(iobase);
+
     /* Read response */
     r1 = sdcmd_r1a(iobase);
+    debug("r1=$%02lx", r1);
+
+    /* But we ignore it... There is no circumstance
+     * where it will have meaningful information,
+     * and some cards put junk data in the R1
+     * response.
+     */
+    r1 = 0;
 
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
         tmp = sdcmd_in(iobase);
+        debug("tmp=$%02lx", tmp);
         if (tmp == 0xff)
            break;
     }
 
     sdcmd_select(iobase, FALSE);
 
-    return (tmp == 0xff) ? r1 : SDERRF_TIMEOUT;
+    return (i == SDCMD_TIMEOUT) ? SDERRF_TIMEOUT : r1;
 }
 
 UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
@@ -305,11 +318,13 @@ UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
     }
 
     r1 = ((byte & SDDRS_CODE_MASK) == SDDRS_CODE_ACCEPTED) ? 0 : SDERRF_CRC;
+    debug("byte=$%02lx, r1=$%02lx", byte, r1);
 
     /* Wait for the idle pattern */
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
         UBYTE tmp = sdcmd_in(iobase);
+        debug("ptmp = $%02lx", tmp);
         if (tmp == 0xff)
             break;
     }
@@ -522,6 +537,7 @@ UBYTE sdcmd_read_blocks(ULONG iobase, ULONG addr, UBYTE *buff, int blocks)
     sdcmd_send(iobase, SDCMD_READ_MULTIPLE_BLOCK, addr);
     r1 = sdcmd_r1a(iobase);
     if (r1) {
+        debug("r1=$%02lx", r1);
         sdcmd_select(iobase, FALSE);
         return r1;
     }
@@ -529,6 +545,7 @@ UBYTE sdcmd_read_blocks(ULONG iobase, ULONG addr, UBYTE *buff, int blocks)
     for (; blocks > 0; blocks--, buff += SDSIZ_BLOCK) {
         r1 = sdcmd_read_packet(iobase, buff, SDSIZ_BLOCK);
         if (r1) {
+            debug("r1=$%02lx", r1);
             /* Terminate the read early */
             sdcmd_stop_transmission(iobase);
             return r1;
@@ -579,6 +596,7 @@ UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks
 
     for (; blocks; blocks--, buff += SDSIZ_BLOCK) {
         r1 = sdcmd_write_packet(iobase, token, buff, SDSIZ_BLOCK);
+        debug("pr1=$%02lx", r1);
         if (r1)
             break;
     }
@@ -594,13 +612,15 @@ UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
         tmp = sdcmd_in(iobase);
+        debug("tmp=$%02lx", tmp);
         if (tmp == 0xff)
             break;
     }
 
     sdcmd_select(iobase, FALSE);
 
-    return (tmp == 0xff) ? r1 : SDERRF_TIMEOUT;
+    debug("i=%ld, r1=$%02lx", i, r1);
+    return (i == SDCMD_TIMEOUT) ? SDERRF_TIMEOUT : r1;
 }
 
 /* vim: set shiftwidth=4 expandtab:  */
