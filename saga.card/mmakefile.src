@@ -83,7 +83,10 @@ FUNCS := findcard initcard \
     saga_pll \
     modeline_vesa
 
-%build_module mmake=saga-card \
+#MM- saga-card: saga-card-driver saga-card-c
+#MM- saga-card-quick: saga-card-driver-quick saga-card-c-quick
+
+%build_module mmake=saga-card-driver \
     modname=saga modsuffix=card modtype=library \
     files="$(FUNCS)" uselibs="romhack" \
     moduledir="$(AROS_DIR_LIBRARIES)/Picasso96"

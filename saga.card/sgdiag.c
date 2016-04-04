@@ -32,15 +32,61 @@
 
 #include <saga/video.h>
 
+#include <proto/picasso96.h>
+
 #include "saga_intern.h"
 
-AROS_SH6H(SDDiag , 0.1,                 "SAGA Graphic Diagnostic\n",
+static int p96mode(struct Library *SysBase, struct Library *DOSBase, ULONG width, ULONG height, RGBFTYPE mode)
+{
+    ULONG color[4] = { 0xff0000, 0x00ff00, 0x0000ff, 0xffffff };
+    struct Screen *scr;
+    struct RastPort *rp;
+    struct Library *P96Base;
+    struct TagItem screentag[] = {
+        { P96SA_RGBFormat, mode },
+        { P96SA_Width, width },
+        { P96SA_Height, height },
+        { TAG_END }
+    };
+
+    P96Base = OpenLibrary("Picasso96API.library", 0);
+    if (!P96Base) {
+        Printf("Can't open Picasso96API.library\n");
+        return RETURN_FAIL;
+    }
+
+    scr = p96OpenScreenTagList(screentag);
+    if (!scr) {
+        Printf("Can't open %ldx%ld screen, for RGBFTYPE %ld\n",
+                width, height, mode);
+        CloseLibrary(P96Base);
+        return RETURN_FAIL;
+    }
+
+    rp = &scr->RastPort;
+
+    p96RectFill(rp, 0, 0, width/2, height/2, color[0]);
+    p96RectFill(rp, width/2, 0, width, height/2, color[1]);
+    p96RectFill(rp, 0, height/2, width/2, height, color[2]);
+    p96RectFill(rp, width/2, height/2, width, height, color[3]);
+
+    /* Delay for 4 seconds */
+    Delay(4 * 50);
+
+    p96CloseScreen(scr);
+
+    CloseLibrary(P96Base);
+    return RETURN_OK;
+}
+
+AROS_SH7H(SDDiag , 0.1,                 "SAGA Graphic Diagnostic\n",
 AROS_SHAH(ULONG *  , W= ,WIDTH,/K/N,    0 , "Width\n"),
 AROS_SHAH(ULONG *  , H= ,HEIGHT,/K/N,   0 , "Height\n"),
 AROS_SHAH(ULONG *  , F= ,FORMAT,/K/N,   0 , "Format (0-5)\n"),
-AROS_SHAH(ULONG *  , P= ,PADDING,/K/N,  0 , "Padding\n"),
+AROS_SHAH(ULONG *  , P= ,PADDING,/K,  0 , "Padding\n"),
 AROS_SHAH(BOOL     , X= ,XDOUBLE,/S, FALSE, "Double X\n"),
-AROS_SHAH(BOOL     , Y= ,YDOUBLE,/S, FALSE, "Double Y\n"))
+AROS_SHAH(BOOL     , Y= ,YDOUBLE,/S, FALSE, "Double Y\n"),
+AROS_SHAH(BOOL     , P96= ,PICASSO96,/S, FALSE, "Use Picasso96, not hardware banging\n"))
 {
     AROS_SHCOMMAND_INIT
 
@@ -49,6 +95,7 @@ AROS_SHAH(BOOL     , Y= ,YDOUBLE,/S, FALSE, "Double Y\n"))
     ULONG mode  = SHArg(FORMAT) ? *SHArg(FORMAT) : SAGA_VIDEO_FORMAT_RGB16;
     BOOL  dx    = SHArg(XDOUBLE);
     BOOL  dy    = SHArg(YDOUBLE);
+    BOOL  p96   = SHArg(PICASSO96);
     ULONG padding = SHArg(PADDING) ? *SHArg(PADDING) : 0;
     int bpp = (mode == SAGA_VIDEO_FORMAT_CLUT8) ? 1 :
               (mode == SAGA_VIDEO_FORMAT_RGB16) ? 2 :
@@ -57,6 +104,9 @@ AROS_SHAH(BOOL     , Y= ,YDOUBLE,/S, FALSE, "Double Y\n"))
               (mode == SAGA_VIDEO_FORMAT_RGB32) ? 4 : 1;
     int i, gx, gy, x, y;
     ULONG here = SAGA_VIDEO_MEMBASE;
+
+    if (p96)
+        return p96mode((struct Library *)SysBase, (struct Library *)DOSBase, width, height, mode);
 
     /* Set up video hardware */
     Printf("%ldx%ld, Format %ld", width, height, mode);
