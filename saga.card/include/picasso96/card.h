@@ -59,6 +59,32 @@ enum {
 };
 
 typedef enum {
+    BT_NoBoard = 0,
+    BT_oMniBus = 1,
+    BT_Graffity = 2,
+    BT_CyberVision = 3,
+    BT_Domino = 4,
+    BT_Merlin = 5,
+    BT_PicassoII = 6,
+    BT_Piccolo = 7,
+    BT_RetinaBLT = 8,
+    BT_Spectum = 9,
+    BT_PicassoIV = 10,
+    BT_PiccoloSD64 = 11,
+    BT_A2410 = 12,
+    BT_Pixel64 = 13,
+    BT_uaegfx = 14,
+    BT_CVision3D = 15,
+    BT_Altais = 16,
+    BT_Prototype1 = 17,
+    BT_Prototype2 = 18,
+    BT_Prototype3 = 19,
+    BT_Prototype4 = 20,
+    BT_Prototype5 = 21,
+    BT_MaxBoardTypes
+} BTYPE;
+
+typedef enum {
     RGBFB_NONE = 0,
     RGBFB_CLUT = 1,
     RGBFB_R8G8B8 = 2,

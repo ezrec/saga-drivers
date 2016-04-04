@@ -372,7 +372,7 @@ static void SAGASD_IOTask(struct Library *SysBase)
     if ((status.mn_ReplyPort = CreateMsgPort())) {
         if ((tport = CreateMsgPort())) {
             if ((treq = (struct timerequest *)CreateIORequest(tport, sizeof(*treq)))) {
-                if (0 == OpenDevice(TIMERNAME, UNIT_VBLANK, treq, 0)) {
+                if (0 == OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)treq, 0)) {
                     status.mn_Length = 0;   // Success!
                 } else {
                     DeleteIORequest(treq);
@@ -429,7 +429,7 @@ static void SAGASD_IOTask(struct Library *SysBase)
             treq->tr_node.io_Command = TR_ADDREQUEST;
             treq->tr_time.tv_secs = 0;
             treq->tr_time.tv_micro = 100 * 1000;
-            SendIO(treq);
+            SendIO((struct IORequest *)treq);
 
             /* Wait on either the MsgPort, or the timer */
             sigs = Wait(sigset);
@@ -437,14 +437,14 @@ static void SAGASD_IOTask(struct Library *SysBase)
                 /* Message port was signalled */
                 io = (struct IORequest *)GetMsg(mport);
                 /* Cancel the timer */
-                AbortIO(treq);
+                AbortIO((struct IORequest *)treq);
             } else {
                 /* Timeout was signalled */
                 io = NULL;
             }
 
             /* Clean up the timer IO */
-            WaitIO(treq);
+            WaitIO((struct IORequest *)treq);
         }
 
         /* If there was no io, continue on...
@@ -470,8 +470,8 @@ static void SAGASD_IOTask(struct Library *SysBase)
     }
 
     /* Clean up */
-    CloseDevice(treq);
-    DeleteIORequest(treq);
+    CloseDevice((struct IORequest *)treq);
+    DeleteIORequest((struct IORequest *)treq);
     DeleteMsgPort(tport);
     DeleteMsgPort(mport);
 }
@@ -687,7 +687,7 @@ static int GM_UNIQUENAME(expunge)(struct SAGASDBase * SAGASDBase)
         io.io_Command = ~0;
 
         /* Signal the unit task to die */
-        DoIO(&io.io_Message);
+        DoIO(&io);
     }
 
     return TRUE;
