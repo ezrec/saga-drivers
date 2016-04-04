@@ -8,7 +8,8 @@ SAGA Chipset Drivers (for AmigaOS 3.x)
 ## saga.card
 
 * Supports 320x240 and 640x480 at 60Hz
-* Can display in 8 bit palette mode, 15 bit hicolor, or 16 bit hicolor
+* Can display in 8 bit palette mode, 15 bit hicolor, 16 bit hicolor,
+  24-bit RGB, and 32-bit RGB.
 * Works with both Picasso96 for AmigaOS, or with AROS
 
 ### Compilation
