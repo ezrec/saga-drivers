@@ -67,7 +67,7 @@ static VOID sdcmd_log(struct sdcmd *sd, int level, const char *format, ...)
 ULONG write_buffer[512 * 16 / sizeof(ULONG)];
 ULONG read_buffer[512 * 16 / sizeof(ULONG)];
 
-AROS_SH6H(SDDiag , 0.8j,                 "SAGA SD Diagnostic\n",
+AROS_SH6H(SDDiag , 0.8k,                 "SAGA SD Diagnostic\n",
 AROS_SHAH(ULONG *  ,IO= ,IOBASE,/K/N,  0 ,  "SD IO Base\n"),
 AROS_SHAH(ULONG *  ,P= ,PATTERN,/K/N,  0 ,  "Pattern for WRITE testing\n"),
 AROS_SHAH(BOOL     ,R= ,READ,/S,    FALSE, "Perform READ test to last 16 blocks\n"),
