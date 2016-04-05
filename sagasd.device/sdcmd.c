@@ -34,7 +34,27 @@
 
 #include "common.h"
 
-UBYTE crc7(UBYTE crc, UBYTE byte)
+#if DEBUG
+#define sdcmd_log(sd,level,fmt,args...) \
+    do { \
+        if (sd->func.log) \
+            sd->func.log(sd, level, "%s:%ld " fmt, __func__, (ULONG)__LINE__ ,##args); \
+    } while (0)
+#else
+#define sdcmd_log(sd,level,fmt,args...) \
+    do { \
+        if (sd->func.log) \
+            sd->func.log(sd, level, fmt ,##args); \
+    } while (0)
+#endif
+
+#define diag(fmt,args...)       sdcmd_log(sd, SDLOG_DIAG, fmt ,##args)
+#define debug(fmt,args...)      sdcmd_log(sd, SDLOG_DEBUG, fmt ,##args)
+#define info(fmt,args...)       sdcmd_log(sd, SDLOG_INFO,  fmt ,##args)
+#define warn(fmt,args...)       sdcmd_log(sd, SDLOG_WARN, fmt ,##args)
+#define error(fmt,args...)      sdcmd_log(sd, SDLOG_ERROR, fmt ,##args)
+
+static UBYTE crc7(UBYTE crc, UBYTE byte)
 {
     int i;
 
@@ -49,7 +69,7 @@ UBYTE crc7(UBYTE crc, UBYTE byte)
     return crc;
 }
 
-UWORD crc16(UWORD crc, UBYTE byte)
+static UWORD crc16(UWORD crc, UBYTE byte)
 {
     crc = ((UBYTE)(crc >> 8)) | ((UBYTE)crc << 8);
     crc ^= byte;
@@ -60,65 +80,80 @@ UWORD crc16(UWORD crc, UBYTE byte)
     return crc;
 }
 
-static UBYTE sdcmd_out(ULONG iobase, UBYTE data)
+static VOID sdcmd_out(struct sdcmd *sd, UBYTE data)
 {
-    Write8(iobase + SAGA_SD_DATA, data);
+    diag("SD_DATA <= $%02lx", data);
 
-    return (UBYTE)Read8(iobase + SAGA_SD_DATA);
+    Write8(sd->iobase + SAGA_SD_DATA, data);
+
+    (void)Read8(sd->iobase + SAGA_SD_DATA);
 }
 
-static UBYTE sdcmd_in(ULONG iobase)
+static UBYTE sdcmd_in(struct sdcmd *sd)
 {
-    return sdcmd_out(iobase, 0xff);
+    UBYTE val;
+
+    Write8(sd->iobase + SAGA_SD_DATA, 0xff);
+    val = Read8(sd->iobase + SAGA_SD_DATA);
+
+    diag("SD_DATA => $%02lx", val);
+
+    return val;
 }
 
             
-BOOL sdcmd_present(ULONG iobase)
+BOOL sdcmd_present(struct sdcmd *sd)
 {
-    UBYTE tmp;
+    UWORD val;
     
-    tmp = Read16(iobase + SAGA_SD_STAT);
-    return (tmp & SAGA_SD_STAT_NCD) ? FALSE : TRUE;
+    val = Read16(sd->iobase + SAGA_SD_STAT);
+
+    diag("SD_STAT => $%04lx", val);
+
+    return (val & SAGA_SD_STAT_NCD) ? FALSE : TRUE;
 }
 
-VOID sdcmd_select(ULONG iobase, BOOL cs)
+VOID sdcmd_select(struct sdcmd *sd, BOOL cs)
 {
     UWORD val;
 
     val = SAGA_SD_CTL_NCS(cs ? 0 : 1);
-    Write16(iobase + SAGA_SD_CTL, val);
+
+    diag("SD_CTL  => $%04lx", val);
+
+    Write16(sd->iobase + SAGA_SD_CTL, val);
 }
 
-void sdcmd_send(ULONG iobase, UBYTE cmd, ULONG arg)
+void sdcmd_send(struct sdcmd *sd, UBYTE cmd, ULONG arg)
 {
     int i;
     UBYTE crc;
 
-    sdcmd_select(iobase, TRUE);
+    sdcmd_select(sd, TRUE);
 
     cmd = (cmd & 0x3f) | SDCMD_VALID;
 
     crc = crc7(0, cmd);
 
-    sdcmd_out(iobase, (cmd & 0x3f) | 0x40);
+    sdcmd_out(sd, (cmd & 0x3f) | 0x40);
 
     for (i = 0; i < 4; i++, arg <<= 8) {
         UBYTE byte = (arg >> 24) & 0xff;
         crc = crc7(crc, byte);
 
-        sdcmd_out(iobase, byte);
+        sdcmd_out(sd, byte);
     }
 
-    sdcmd_out(iobase, (crc << 1) | 1);
+    sdcmd_out(sd, (crc << 1) | 1);
 }
 
-static UBYTE sdcmd_r1a(ULONG iobase)
+static UBYTE sdcmd_r1a(struct sdcmd *sd)
 {
     UBYTE r1;
     int i;
 
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        r1 = sdcmd_in(iobase);
+        r1 = sdcmd_in(sd);
         if (!(r1 & SDERRF_TIMEOUT))
             return r1;
     }
@@ -128,92 +163,92 @@ static UBYTE sdcmd_r1a(ULONG iobase)
 
 #define R1_OK(x)        (((x) & ~SDERRF_IDLE) == 0)
 
-UBYTE sdcmd_r1(ULONG iobase)
+UBYTE sdcmd_r1(struct sdcmd *sd)
 {
     UBYTE r1;
 
-    r1 = sdcmd_r1a(iobase);
-    sdcmd_select(iobase, FALSE);
+    r1 = sdcmd_r1a(sd);
+    sdcmd_select(sd, FALSE);
 
     return r1;
 }
 
-UBYTE sdcmd_r2(ULONG iobase, UBYTE *r2)
+UBYTE sdcmd_r2(struct sdcmd *sd, UBYTE *r2)
 {
     UBYTE r1;
 
-    r1 = sdcmd_r1a(iobase);
+    r1 = sdcmd_r1a(sd);
     if (R1_OK(r1))
-        *r2 = sdcmd_in(iobase);
+        *r2 = sdcmd_in(sd);
 
-    sdcmd_select(iobase, FALSE);
+    sdcmd_select(sd, FALSE);
 
     return r1;
 }
 
-UBYTE sdcmd_r3(ULONG iobase, ULONG *ocr)
+UBYTE sdcmd_r3(struct sdcmd *sd, ULONG *ocr)
 {
     UBYTE r1;
     ULONG r3 = 0;
     int i;
 
-    r1 = sdcmd_r1a(iobase);
+    r1 = sdcmd_r1a(sd);
     if (R1_OK(r1)) {
         for (i = 0; i < 4; i++) {
             r3 <<= 8;
-            r3 |= sdcmd_in(iobase);
+            r3 |= sdcmd_in(sd);
         }
     }
 
-    sdcmd_select(iobase, FALSE);
+    sdcmd_select(sd, FALSE);
 
-    debug("r3=0x%08lx\n", r3);
+    debug("r3=0x%08lx", r3);
     *ocr = r3;
 
     return r1;
 }
 
-UBYTE sdcmd_r7(ULONG iobase, ULONG *ifcond)
+UBYTE sdcmd_r7(struct sdcmd *sd, ULONG *ifcond)
 {
     UBYTE r1;
     ULONG r7 = 0;
     int i;
 
-    r1 = sdcmd_r1a(iobase);
+    r1 = sdcmd_r1a(sd);
     if (R1_OK(r1)) {
         for (i = 0; i < 4; i++) {
             r7 <<= 8;
-            r7 |= sdcmd_in(iobase);
+            r7 |= sdcmd_in(sd);
         }
     }
 
-    sdcmd_select(iobase, FALSE);
+    sdcmd_select(sd, FALSE);
 
-    debug("r7=0x%08lx\n", r7);
+    debug("r7=0x%08lx", r7);
     *ifcond = r7;
 
     return r1;
 }
 
-UBYTE sdcmd_asend(ULONG iobase, UBYTE acmd, ULONG arg)
+UBYTE sdcmd_asend(struct sdcmd *sd, UBYTE acmd, ULONG arg)
 {
     UBYTE r1;
 
     /* Next command is an app command.. */
-    sdcmd_send(iobase, SDCMD_APP_CMD, 0);
+    sdcmd_send(sd, SDCMD_APP_CMD, 0);
 
-    r1 = sdcmd_r1a(iobase);
+    r1 = sdcmd_r1a(sd);
     if (!R1_OK(r1)) {
-        sdcmd_select(iobase, FALSE);
+        sdcmd_select(sd, FALSE);
         return r1;
     }
 
-    sdcmd_send(iobase, acmd, arg);
+    sdcmd_send(sd, acmd, arg);
 
     return 0;
 }
 
-UBYTE sdcmd_read_packet(ULONG iobase, UBYTE *buff, int len)
+UBYTE sdcmd_read_packet(struct sdcmd *sd, UBYTE *buff, int len)
 {
     UBYTE token = 0xfe;
     UBYTE byte;
@@ -222,27 +257,27 @@ UBYTE sdcmd_read_packet(ULONG iobase, UBYTE *buff, int len)
 
     /* Wait for the Data Token */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        byte = sdcmd_in(iobase);
+        byte = sdcmd_in(sd);
         if (byte == token)
             break;
     }
 
     if (i == SDCMD_TIMEOUT) {
-        sdcmd_select(iobase, FALSE);
+        sdcmd_select(sd, FALSE);
         return SDERRF_TIMEOUT;
     }
 
     crc = 0;
 
     for (i = 0; i < len; i++, buff++) {
-        byte = sdcmd_in(iobase);
+        byte = sdcmd_in(sd);
         crc = crc16(crc, byte);
         *buff = byte;
     }
 
     /* Read the CRC16 */
-    tmp = (UWORD)sdcmd_in(iobase) << 8;
-    tmp |= sdcmd_in(iobase);
+    tmp = (UWORD)sdcmd_in(sd) << 8;
+    tmp |= sdcmd_in(sd);
 
     if (tmp != crc)
         return SDERRF_CRC;
@@ -251,21 +286,28 @@ UBYTE sdcmd_read_packet(ULONG iobase, UBYTE *buff, int len)
 }
 
 
-UBYTE sdcmd_stop_transmission(ULONG iobase)
+UBYTE sdcmd_stop_transmission(struct sdcmd *sd)
 {
+    LONG crc_retry = sd->retry.read;
     UBYTE r1, tmp;
-    int i;
+    int i = 0;
 
-    sdcmd_send(iobase, SDCMD_STOP_TRANSMISSION, 0);
+    do {
+        sdcmd_send(sd, SDCMD_STOP_TRANSMISSION, 0);
 
-    /* Read the stuff byte */
-    sdcmd_in(iobase);
+        /* Read the stuff byte */
+        sdcmd_in(sd);
 
-    /* Read response */
-    r1 = sdcmd_r1a(iobase);
-    debug("r1=$%02lx", r1);
+        /* Read response */
+        r1 = sdcmd_r1a(sd);
+        debug("r1=$%02lx", r1);
+    } while ((r1 & SDERRF_CRC) && (crc_retry-- > 0));
 
-    /* But we ignore it... There is no circumstance
+    /* If it's a CRC error, after our retires, just die. */
+    if (r1 & SDERRF_CRC)
+        goto exit;
+
+    /* Otherwise we ignore it... There is no circumstance
      * where it will have meaningful information,
      * and some cards put junk data in the R1
      * response.
@@ -274,46 +316,47 @@ UBYTE sdcmd_stop_transmission(ULONG iobase)
 
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        tmp = sdcmd_in(iobase);
+        tmp = sdcmd_in(sd);
         debug("tmp=$%02lx", tmp);
         if (tmp == 0xff)
            break;
     }
 
-    sdcmd_select(iobase, FALSE);
+exit:
+    sdcmd_select(sd, FALSE);
 
     return (i == SDCMD_TIMEOUT) ? SDERRF_TIMEOUT : r1;
 }
 
-UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
+UBYTE sdcmd_write_packet(struct sdcmd *sd, UBYTE token, CONST UBYTE *buff, int len)
 {
     UBYTE r1, byte;
     UWORD crc;
     int i;
 
     /* Send a spacing byte */
-    sdcmd_out(iobase, 0xff);
+    sdcmd_out(sd, 0xff);
 
     /* Start the data packet */
-    sdcmd_out(iobase, token);
+    sdcmd_out(sd, token);
     crc = 0;
 
     /* Send the block */
     for (i = 0; i < SDSIZ_BLOCK; i++, buff++) {
         byte = *buff;
-        sdcmd_out(iobase, byte);
+        sdcmd_out(sd, byte);
         crc = crc16(crc, byte);
     }
 
     /* Send the CRC16, MSB first */
-    sdcmd_out(iobase, (crc >> 8) & 0xff);
-    sdcmd_out(iobase, (crc >> 0) & 0xff);
+    sdcmd_out(sd, (crc >> 8) & 0xff);
+    sdcmd_out(sd, (crc >> 0) & 0xff);
 
     /* Read the Data Response */
-    byte = sdcmd_in(iobase);
+    byte = sdcmd_in(sd);
     if ((byte & SDDRS_VALID_MASK) != SDDRS_VALID) {
         /* Terminate the read early */
-        sdcmd_stop_transmission(iobase);
+        sdcmd_stop_transmission(sd);
         return SDERRF_CRC;
     }
 
@@ -323,7 +366,7 @@ UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len)
     /* Wait for the idle pattern */
     /* Wait until not busy */
     for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        UBYTE tmp = sdcmd_in(iobase);
+        UBYTE tmp = sdcmd_in(sd);
         debug("ptmp = $%02lx", tmp);
         if (tmp == 0xff)
             break;
@@ -355,8 +398,9 @@ static ULONG bits(UBYTE *mask, int start, int len)
 
 /* If non-zero, filled in the total size in blocks of the device
  */
-UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
+UBYTE sdcmd_detect(struct sdcmd *sd)
 {
+    struct sdcmd_info *info = &sd->info;
     UBYTE r1;
     ULONG r7;
     int i;
@@ -364,38 +408,38 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
     memset(info, 0, sizeof(*info));
 
     /* First, check the DETECT bit */
-    if (!sdcmd_present(iobase))
+    if (!sdcmd_present(sd))
         return ~0;
 
     /* Emit at least 74 clocks of idle */
-    sdcmd_select(iobase, TRUE);
+    sdcmd_select(sd, TRUE);
     for (i = 0; i < 10; i++)
-        sdcmd_out(iobase, 0xff);
-    sdcmd_select(iobase, FALSE);
+        sdcmd_out(sd, 0xff);
+    sdcmd_select(sd, FALSE);
 
     /* Stuff two idle bytes while deasserted */
-    sdcmd_out(iobase, 0xff);
-    sdcmd_out(iobase, 0xff);
+    sdcmd_out(sd, 0xff);
+    sdcmd_out(sd, 0xff);
 
     /* Put into idle state */
-    sdcmd_send(iobase, SDCMD_GO_IDLE_STATE, 0);
-    r1 = sdcmd_r1(iobase);
+    sdcmd_send(sd, SDCMD_GO_IDLE_STATE, 0);
+    r1 = sdcmd_r1(sd);
     /* It's ok (and expected) that we are in IDLE state */
     r1 &= ~SDERRF_IDLE;
     if (r1)
         return r1;
 
     /* Do SHDC detection during idle */
-    sdcmd_send(iobase, SDCMD_SEND_IF_COND, 0x000001aa);
-    r1 = sdcmd_r7(iobase, &r7);
+    sdcmd_send(sd, SDCMD_SEND_IF_COND, 0x000001aa);
+    r1 = sdcmd_r7(sd, &r7);
     /* It's ok (and expected) that we are in IDLE state */
     r1 &= ~SDERRF_IDLE;
     if (!r1) {
         /* Looks like a SDHC card? */
         if ((r7 & 0x000001ff) == 0x000001aa) {
             /* Set HCS (SDHC) mode */
-            sdcmd_asend(iobase, SDCMD_SD_SEND_OP_COND, SDOCRF_HCS);
-            r1 = sdcmd_r1(iobase);
+            sdcmd_asend(sd, SDCMD_SD_SEND_OP_COND, SDOCRF_HCS);
+            r1 = sdcmd_r1(sd);
             /* It's ok (and expected) that we are in IDLE state */
             r1 &= ~SDERRF_IDLE;
             if (r1)
@@ -408,11 +452,11 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
         UBYTE err;
        
         /* Initiate SDC init process */
-        err = sdcmd_asend(iobase, SDCMD_SD_SEND_OP_COND, 0);
+        err = sdcmd_asend(sd, SDCMD_SD_SEND_OP_COND, 0);
         if (err)
             return err;
 
-        r1 = sdcmd_r1(iobase);
+        r1 = sdcmd_r1(sd);
         if (!(r1 & SDERRF_IDLE))
             break;
     }
@@ -422,56 +466,58 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
         return r1;
 
     /* Check for voltage levels */
-    sdcmd_send(iobase, SDCMD_READ_OCR, 0);
-    r1 = sdcmd_r3(iobase, &info->ocr);
+    sdcmd_send(sd, SDCMD_READ_OCR, 0);
+    r1 = sdcmd_r3(sd, &info->ocr);
     debug("r1=0x%lx", r1);
     if (r1)
         return r1;
 
     /* Not in our voltage range */
-    debug("ocr=0x%08lx (vs 0x%08lx)", info->ocr, SDOCRF_MAX_3_3V | SDOCRF_MAX_3_4V);
+    info("ocr=0x%08lx (vs 0x%08lx)", info->ocr, SDOCRF_MAX_3_3V | SDOCRF_MAX_3_4V);
     if (!(info->ocr & (SDOCRF_MAX_3_3V | SDOCRF_MAX_3_4V)))
         return SDERRF_IDLE;
 
     if (info) {
         ULONG c_size_mult, read_bl_len, c_size;
+        UBYTE *csd = &info->csd[0];
+        UBYTE *cid = &info->cid[0];
 
         /* Get the CSD data */
-        sdcmd_send(iobase, SDCMD_SEND_CSD, 0);
-        r1 = sdcmd_r1a(iobase);
+        sdcmd_send(sd, SDCMD_SEND_CSD, 0);
+        r1 = sdcmd_r1a(sd);
         debug("r1=0x%lx", r1);
         if (r1)
             goto exit;
 
-        r1 = sdcmd_read_packet(iobase, &info->csd[0], 16);
+        r1 = sdcmd_read_packet(sd, csd, 16);
         debug("r1=0x%lx", r1);
         if (r1)
             goto exit;
 
-        debug("csd=%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx",
-                info->csd[0], info->csd[1], info->csd[2], info->csd[3],
-                info->csd[4], info->csd[5], info->csd[6], info->csd[7],
-                info->csd[8], info->csd[9], info->csd[10], info->csd[11],
-                info->csd[12], info->csd[13], info->csd[14], info->csd[15]);
+        info("csd=%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx",
+                csd[0], csd[1], csd[2], csd[3],
+                csd[4], csd[5], csd[6], csd[7],
+                csd[8], csd[9], csd[10], csd[11],
+                csd[12], csd[13], csd[14], csd[15]);
 
         /* Get the CID data */
-        sdcmd_send(iobase, SDCMD_SEND_CID, 0);
-        r1 = sdcmd_r1a(iobase);
+        sdcmd_send(sd, SDCMD_SEND_CID, 0);
+        r1 = sdcmd_r1a(sd);
         debug("r1=%d", r1);
         if (r1)
             goto exit;
 
-        r1 = sdcmd_read_packet(iobase, &info->cid[0], 16);
-        sdcmd_select(iobase, FALSE);
+        r1 = sdcmd_read_packet(sd, cid, 16);
+        sdcmd_select(sd, FALSE);
 
         debug("r1=0x%lx", r1);
         if (r1)
             return r1;
-        debug("cid=%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx",
-                info->cid[0], info->cid[1], info->cid[2], info->cid[3],
-                info->cid[4], info->cid[5], info->cid[6], info->cid[7],
-                info->cid[8], info->cid[9], info->cid[10], info->cid[11],
-                info->cid[12], info->cid[13], info->cid[14], info->cid[15]);
+        info("cid=%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx-%02lx%02lx%02lx%02lx",
+                cid[0], cid[1], cid[2], cid[3],
+                cid[4], cid[5], cid[6], cid[7],
+                cid[8], cid[9], cid[10], cid[11],
+                cid[12], cid[13], cid[14], cid[15]);
 
         info->block_size = SDSIZ_BLOCK;
 
@@ -479,148 +525,185 @@ UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info)
             /* SDHC calculation */
 
             /* Bits 68:48 of the CSD */
-            c_size = bits(&info->csd[15], 48, 20);
+            c_size = bits(&csd[15], 48, 20);
 
-            debug("c_size=%ld", c_size);
+            info("SDHC: c_size=%ld", c_size);
 
             info->blocks = (c_size + 1) * 1024;
+
+            info->addr_shift = 0;
         } else {
             /* SD calculation */
             /* Bits 49:47 of the CSD */
-            c_size_mult = bits(&info->csd[15], 47, 3);
+            c_size_mult = bits(&csd[15], 47, 3);
             /* Bits 83:80 of the CSD */
-            read_bl_len = bits(&info->csd[15], 80, 4);
+            read_bl_len = bits(&csd[15], 80, 4);
             /* Bits 73:62 of the CSD */
-            c_size = bits(&info->csd[15], 62, 12);
+            c_size = bits(&csd[15], 62, 12);
 
-            debug("c_size_mult=%ld, read_bl_len=%ld, c_size=%ld", c_size_mult, read_bl_len, c_size);
+            info("SD: c_size_mult=%ld, read_bl_len=%ld, c_size=%ld", c_size_mult, read_bl_len, c_size);
 
             info->blocks = (1UL << (c_size_mult + read_bl_len + 2 - 9)) * (c_size + 1);
 
             /* Set block size */
-            sdcmd_send(iobase, SDCMD_SET_BLOCKLEN, info->block_size);
-            r1 = sdcmd_r1(iobase);
+            sdcmd_send(sd, SDCMD_SET_BLOCKLEN, info->block_size);
+            r1 = sdcmd_r1(sd);
             if (r1)
                 return r1;
+
+            info->addr_shift = 9;
         }
-        debug("blocks=%ld", info->blocks);
+        info("blocks=%ld", info->blocks);
     }
 
 exit:
-    sdcmd_select(iobase, FALSE);
+    sdcmd_select(sd, FALSE);
     return r1;
 }
 
-UBYTE sdcmd_read_block(ULONG iobase, ULONG addr, UBYTE *buff)
+UBYTE sdcmd_read_block(struct sdcmd *sd, ULONG addr, UBYTE *buff)
 {
     UBYTE r1;
+    LONG crc_retry = sd->retry.read;
 
-    /* Send the read block command */
-    sdcmd_send(iobase, SDCMD_READ_SINGLE_BLOCK, addr);
-    r1 = sdcmd_r1a(iobase);
-    if (!r1)
-        r1 = sdcmd_read_packet(iobase, buff, SDSIZ_BLOCK);
+    do {
+        info("read block=%ld", addr);
 
-    sdcmd_select(iobase, FALSE);
+        /* Send the read block command */
+        sdcmd_send(sd, SDCMD_READ_SINGLE_BLOCK, addr << sd->info.addr_shift);
+        r1 = sdcmd_r1a(sd);
+        if (!r1)
+            r1 = sdcmd_read_packet(sd, buff, SDSIZ_BLOCK);
+
+        sdcmd_select(sd, FALSE);
+
+    } while ((crc_retry-- > 0) && (r1 & SDERRF_CRC));
+
     return r1;
 }
 
 
-UBYTE sdcmd_read_blocks(ULONG iobase, ULONG addr, UBYTE *buff, int blocks)
+UBYTE sdcmd_read_blocks(struct sdcmd *sd, ULONG addr, UBYTE *buff, int blocks)
 {
     UBYTE r1;
+    LONG crc_retry = sd->retry.read;
 
     if (blocks == 1)
-        return sdcmd_read_block(iobase, addr, buff);
+        return sdcmd_read_block(sd, addr, buff);
 
-    /* Send the read block command */
-    sdcmd_send(iobase, SDCMD_READ_MULTIPLE_BLOCK, addr);
-    r1 = sdcmd_r1a(iobase);
-    if (r1) {
-        debug("r1=$%02lx", r1);
-        sdcmd_select(iobase, FALSE);
-        return r1;
-    }
+    do {
+        info("read block=%ld, blocks=%ld", addr, blocks);
 
-    for (; blocks > 0; blocks--, buff += SDSIZ_BLOCK) {
-        r1 = sdcmd_read_packet(iobase, buff, SDSIZ_BLOCK);
+        /* Send the read block command */
+        sdcmd_send(sd, SDCMD_READ_MULTIPLE_BLOCK, addr << sd->info.addr_shift);
+        r1 = sdcmd_r1a(sd);
         if (r1) {
             debug("r1=$%02lx", r1);
-            /* Terminate the read early */
-            sdcmd_stop_transmission(iobase);
-            return r1;
+            sdcmd_select(sd, FALSE);
+            continue;
         }
-    }
-          
-    /* Terminate the read */
-    return sdcmd_stop_transmission(iobase);
+
+        for (; blocks > 0; addr++, blocks--, buff += SDSIZ_BLOCK) {
+            r1 = sdcmd_read_packet(sd, buff, SDSIZ_BLOCK);
+            if (r1) {
+                debug("r1=$%02lx", r1);
+                /* Terminate the read early */
+                sdcmd_stop_transmission(sd);
+                break;
+            }
+
+            /* Reset the retry counter if we read a block */
+            crc_retry = sd->retry.read;
+        }
+
+        if (r1)
+            continue;
+              
+        /* Terminate the read */
+        r1 = sdcmd_stop_transmission(sd);
+    } while ((r1 & SDERRF_CRC) && (crc_retry-- > 0));
+
+    return r1;
 }
 
-UBYTE sdcmd_write_block(ULONG iobase, ULONG addr, CONST UBYTE *buff)
+UBYTE sdcmd_write_block(struct sdcmd *sd, ULONG addr, CONST UBYTE *buff)
 {
+    LONG crc_retry = sd->retry.write;
     UBYTE token = 0xfe;
     UBYTE r1;
 
-    debug("addr=%ld", addr);
+    do {
+        info("write block=%ld", addr);
 
-    /* Send write block command */
-    sdcmd_send(iobase, SDCMD_WRITE_SINGLE_BLOCK, addr);
-    r1 = sdcmd_r1a(iobase);
-    if (!r1)
-        r1 = sdcmd_write_packet(iobase, token, buff, SDSIZ_BLOCK);
+        /* Send write block command */
+        sdcmd_send(sd, SDCMD_WRITE_SINGLE_BLOCK, addr << sd->info.addr_shift);
+        r1 = sdcmd_r1a(sd);
+        if (!r1)
+            r1 = sdcmd_write_packet(sd, token, buff, SDSIZ_BLOCK);
 
-    sdcmd_select(iobase, FALSE);
+        sdcmd_select(sd, FALSE);
+    } while ((r1 & SDERRF_CRC) && (crc_retry-- > 0));
 
     return r1;
 }
 
 
-UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks)
+UBYTE sdcmd_write_blocks(struct sdcmd *sd, ULONG addr, CONST UBYTE *buff, int blocks)
 {
+    LONG crc_retry = sd->retry.write;
     UBYTE token = 0xfc, stop_token = 0xfd;
     UBYTE tmp, r1;
     int i;
 
     if (blocks == 1)
-        return sdcmd_write_block(iobase, addr, buff);
+        return sdcmd_write_block(sd, addr, buff);
 
-    debug("addr=%ld, blocks=%ld", addr, blocks);
+    do {
+        info("block=%ld, blocks=%ld", addr, blocks);
 
-    /* Send write blocks command */
-    sdcmd_send(iobase, SDCMD_WRITE_MULTIPLE_BLOCK, addr);
-    r1 = sdcmd_r1a(iobase);
-    if (r1) {
-        sdcmd_select(iobase, FALSE);
-        return r1;
-    }
+        /* Send write blocks command */
+        sdcmd_send(sd, SDCMD_WRITE_MULTIPLE_BLOCK, addr << sd->info.addr_shift);
+        r1 = sdcmd_r1a(sd);
+        if (r1) {
+            sdcmd_select(sd, FALSE);
+            continue;
+        }
 
-    for (; blocks; blocks--, buff += SDSIZ_BLOCK) {
-        r1 = sdcmd_write_packet(iobase, token, buff, SDSIZ_BLOCK);
-        debug("pr1=$%02lx", r1);
-        if (r1)
-            break;
-    }
+        for (; blocks; addr++, blocks--, buff += SDSIZ_BLOCK) {
+            r1 = sdcmd_write_packet(sd, token, buff, SDSIZ_BLOCK);
+            debug("pr1=$%02lx", r1);
+            if (r1)
+                break;
 
-    sdcmd_select(iobase, TRUE);
+            /* Reset the retry counter if we wrote a block */
+            crc_retry = sd->retry.read;
+        }
 
-    /* Send stop token */
-    sdcmd_out(iobase, stop_token);
+        sdcmd_select(sd, TRUE);
 
-    /* Read 'stuff' byte */
-    sdcmd_in(iobase);
+        /* Send stop token */
+        sdcmd_out(sd, stop_token);
 
-    /* Wait until not busy */
-    for (i = 0; i < SDCMD_TIMEOUT; i++) {
-        tmp = sdcmd_in(iobase);
-        debug("tmp=$%02lx", tmp);
-        if (tmp == 0xff)
-            break;
-    }
+        /* Read 'stuff' byte */
+        sdcmd_in(sd);
 
-    sdcmd_select(iobase, FALSE);
+        /* Wait until not busy */
+        for (i = 0; i < SDCMD_TIMEOUT; i++) {
+            tmp = sdcmd_in(sd);
+            debug("tmp=$%02lx", tmp);
+            if (tmp == 0xff)
+                break;
+        }
 
-    debug("i=%ld, r1=$%02lx", i, r1);
-    return (i == SDCMD_TIMEOUT) ? SDERRF_TIMEOUT : r1;
+        sdcmd_select(sd, FALSE);
+
+        debug("i=%ld, r1=$%02lx", i, r1);
+        if (i == SDCMD_TIMEOUT)
+            r1 = SDERRF_TIMEOUT;
+
+    } while ((r1 & SDERRF_CRC) && (crc_retry-- > 0));
+
+    return r1;
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

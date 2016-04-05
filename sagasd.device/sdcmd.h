@@ -84,50 +84,79 @@
 #define SDDRS_CODE_REJECT_CRC   0x0a
 #define SDDRS_CODE_REJECT_WRITE 0x0c
 
+/* Log levels */
+#define SDLOG_ERROR     0       /* Errors */
+#define SDLOG_WARN      1       /* Warnings */
+#define SDLOG_INFO      2       /* Information and status */
+#define SDLOG_DEBUG     3       /* Debugging */
+#define SDLOG_DIAG      4       /* All I/O transactions */
+
 /* Raw SD card interface */
+struct sdcmd {
+    struct Node *owner; /* Owner of this structure */
 
-VOID sdcmd_send(ULONG iobase, UBYTE cmd, ULONG arg);
-UBYTE sdcmd_asend(ULONG iobase, UBYTE acmd, ULONG arg);
+    ULONG iobase;
 
-UBYTE sdcmd_r1(ULONG iobase);
-UBYTE sdcmd_r2(ULONG iobase, UBYTE *r2);
-UBYTE sdcmd_r3(ULONG iobase, ULONG *ocr);
-UBYTE sdcmd_r7(ULONG iobase, ULONG *ifcond);
+    struct sdcmd_retry {
+        LONG read;      /* Number of retries to read a block */
+        LONG write;     /* Number of retries to write a block */
+    } retry;
 
-UBYTE sdcmd_read_packet(ULONG iobase, UBYTE *buff, int len);
-UBYTE sdcmd_write_packet(ULONG iobase, UBYTE token, CONST UBYTE *buff, int len);
-UBYTE sdcmd_stop_transmission(ULONG iobase);
+    struct sdcmd_info {
+        /* Raw OCR, CSD and CID data */
+        ULONG ocr;
+        UBYTE csd[16];
+        UBYTE cid[16];
 
-/* Disk-like interface */
-struct sdcmd_info {
-    ULONG block_size;
-    ULONG blocks;
-    BOOL  read_only;
+        /* Disk-like interface */
+        ULONG block_size;
+        ULONG blocks;
+        BOOL  read_only;
 
-    /* Raw OCR, CSD and CID data */
-    ULONG ocr;
-    UBYTE csd[16];
-    UBYTE cid[16];
+        /* Conversion from block to SD address */
+        UBYTE addr_shift;
+    } info;
+
+    /** Functions to be provided by the caller **/
+    struct sdcmd_func {
+        /* Add to the debug log.
+         */
+        VOID (*log)(struct sdcmd *sd, int level, const char *format, ...);
+    } func;
 };
+
+VOID sdcmd_send(struct sdcmd *sd, UBYTE cmd, ULONG arg);
+UBYTE sdcmd_asend(struct sdcmd *sd, UBYTE acmd, ULONG arg);
+
+UBYTE sdcmd_r1(struct sdcmd *sd);
+UBYTE sdcmd_r2(struct sdcmd *sd, UBYTE *r2);
+UBYTE sdcmd_r3(struct sdcmd *sd, ULONG *ocr);
+UBYTE sdcmd_r7(struct sdcmd *sd, ULONG *ifcond);
+
+UBYTE sdcmd_read_packet(struct sdcmd *sd, UBYTE *buff, int len);
+UBYTE sdcmd_write_packet(struct sdcmd *sd, UBYTE token, CONST UBYTE *buff, int len);
+UBYTE sdcmd_stop_transmission(struct sdcmd *sd);
 
 /* Is there something in the SD slot?
  */
-BOOL  sdcmd_present(ULONG iobase);
+BOOL sdcmd_present(struct sdcmd *sd);
 
 /* Detect and initialize the SD device
+ *
+ * Fills in the sd->info fields
  */
-UBYTE sdcmd_detect(ULONG iobase, struct sdcmd_info *info);
+UBYTE sdcmd_detect(struct sdcmd *sd);
 
 /* NOTE: Depending on SDOCRF_HCS, you will need to use either
  *       SDOCRF_HCS == 0   => addr is in bytes
  *     or
  *       SDOCRF_HCS == 1   => addr is in blocks
  */
-UBYTE sdcmd_read_block(ULONG iobase, ULONG addr, UBYTE *buff);
-UBYTE sdcmd_read_blocks(ULONG iobase, ULONG addr, UBYTE *buff, int blocks);
+UBYTE sdcmd_read_block(struct sdcmd *sd, ULONG block, UBYTE *buff);
+UBYTE sdcmd_read_blocks(struct sdcmd *sd, ULONG block, UBYTE *buff, int blocks);
 
-UBYTE sdcmd_write_block(ULONG iobase, ULONG addr, CONST UBYTE *buff);
-UBYTE sdcmd_write_blocks(ULONG iobase, ULONG addr, CONST UBYTE *buff, int blocks);
+UBYTE sdcmd_write_block(struct sdcmd *sd, ULONG block, CONST UBYTE *buff);
+UBYTE sdcmd_write_blocks(struct sdcmd *sd, ULONG block, CONST UBYTE *buff, int blocks);
 
 #endif /* SDCMD_H */
 

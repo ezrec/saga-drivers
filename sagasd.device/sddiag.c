@@ -24,6 +24,7 @@
  */
 
 #include <aros/debug.h>
+#undef DEBUG
 
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -33,6 +34,7 @@
 #include <aros/shcommands.h>
 
 #include "sdcmd.h"
+#include "common.h"
 
 #include <saga/sd.h>
 
@@ -42,31 +44,36 @@
 
 struct Library *SysBase, *DOSBase;
 
+int DebugLevel;
+
 static void setBases(struct ExecBase *pSysBase, struct DosLibrary *pDOSBase)
 {
     SysBase = (struct Library *)pSysBase;
     DOSBase = (struct Library *)pDOSBase;
 }
 
-int kprintf(const char *format, ...)
+static VOID sdcmd_log(struct sdcmd *sd, int level, const char *format, ...)
 {
-    char buffer[1024];
+    static char buffer[1024];
     const ULONG m68k_string_sprintf = 0x16c04e75;
 
-    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
-    Printf("%s", buffer);
+    if (level > DebugLevel)
+        return;
 
-    return strlen(buffer);
+    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
+    Printf("sdcmd: %s\n", buffer);
 }
 
 ULONG write_buffer[512 * 16 / sizeof(ULONG)];
 ULONG read_buffer[512 * 16 / sizeof(ULONG)];
 
-AROS_SH4H(SDDiag , 0.2,                 "SAGA SD Diagnostic\n",
-AROS_SHAH(ULONG *  , ,IOBASE,/K/N,  0 ,  "SD IO Base\n"),
-AROS_SHAH(ULONG *  , ,PATTERN,/K/N,  0 ,  "Pattern for WRITE testing\n"),
-AROS_SHAH(BOOL     , ,READ,/S,    FALSE, "Perform READ test to last 16 blocks\n"),
-AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\n")
+AROS_SH6H(SDDiag , 0.8j,                 "SAGA SD Diagnostic\n",
+AROS_SHAH(ULONG *  ,IO= ,IOBASE,/K/N,  0 ,  "SD IO Base\n"),
+AROS_SHAH(ULONG *  ,P= ,PATTERN,/K/N,  0 ,  "Pattern for WRITE testing\n"),
+AROS_SHAH(BOOL     ,R= ,READ,/S,    FALSE, "Perform READ test to last 16 blocks\n"),
+AROS_SHAH(BOOL     ,W= ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\n"),
+AROS_SHAH(ULONG *  ,   ,RETRY,/N, 0, "Number of CRC retries (5)\n"),
+AROS_SHAH(ULONG *  ,D= ,DEBUG,/N, 0, "Debug level\n")
 )
 {
     AROS_SHCOMMAND_INIT
@@ -75,44 +82,52 @@ AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\
     ULONG pattern = SHArg(PATTERN) ? *SHArg(PATTERN) : 0x5af00000;
     BOOL readTest = SHArg(READ);
     BOOL writeTest = SHArg(WRITE);
-    struct sdcmd_info info;
-    int i, test_shift;
+    ULONG retry = SHArg(RETRY) ? *SHArg(RETRY) : 5;
+    int i;
     ULONG test_block;
     UBYTE err;
+    struct sdcmd sd = {};
 
     setBases(SysBase, DOSBase);
 
-    err = sdcmd_detect(iobase, &info);
+    DebugLevel = SHArg(DEBUG) ? *SHArg(DEBUG) : 0;
+    Printf("DebugLevel: %ld\n", DebugLevel);
+
+    sd.iobase = iobase;
+    sd.retry.read = retry;
+    sd.retry.write = retry;
+    sd.func.log = sdcmd_log;
+
+    err = sdcmd_detect(&sd);
 
     if (!err) {
         Printf("SD Card Detected on $0x%lx:\n", iobase);
-        Printf("Block Size: %ld\n", info.block_size);
-        Printf("Blocks: %ld\n", info.blocks);
+        Printf("Block Size: %ld\n", sd.info.block_size);
+        Printf("Blocks: %ld\n", sd.info.blocks);
         Printf("Capacity: ");
-        if (info.blocks < 1024*2) {
-            Printf("%ldK\n", (info.blocks + 1) / 2);
-        } else if (info.blocks < 1024*1024*2) {
-            Printf("%ldM\n", (info.blocks + 1024*2-1) / 1024 / 2);
+        if (sd.info.blocks < 1024*2) {
+            Printf("%ldK\n", (sd.info.blocks + 1) / 2);
+        } else if (sd.info.blocks < 1024*1024*2) {
+            Printf("%ldM\n", (sd.info.blocks + 1024*2-1) / 1024 / 2);
         } else {
-            Printf("%ldG\n", (info.blocks + 1024*1024*2-1) / 1024 / 1024 / 2);
+            Printf("%ldG\n", (sd.info.blocks + 1024*1024*2-1) / 1024 / 1024 / 2);
         }
 
-        Printf("OCR: %08lx\n", info.ocr);
+        Printf("OCR: %08lx\n", sd.info.ocr);
         Printf("CID:");
         for (i = 0; i < 16; i++)
-            Printf(" %02lx", info.cid[i]);
+            Printf(" %02lx", sd.info.cid[i]);
         Printf("\n");
         Printf("CSD:");
         for (i = 0; i < 16; i++)
-            Printf(" %02lx", info.csd[i]);
+            Printf(" %02lx", sd.info.csd[i]);
         Printf("\n");
     } else {
         Printf("SD Card Detection Error: %lx\n", err);
         return RETURN_FAIL; 
     }
 
-    test_block = info.blocks - 16;
-    test_shift = (info.ocr & SDOCRF_HCS) ? 0 : 9;
+    test_block = sd.info.blocks - 16;
 
     if (writeTest) {
         for (i = 0; i < ARRAY_SIZE(write_buffer); i++)
@@ -121,13 +136,13 @@ AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\
         Printf("WRITE Test: %ld bytes, at block %ld: ",
                 512, test_block);
 
-        err = sdcmd_write_block(iobase, test_block << test_shift, (UBYTE *)&write_buffer[0]);
+        err = sdcmd_write_block(&sd, test_block, (UBYTE *)&write_buffer[0]);
         if (err) {
             Printf("FAILED WRITE, err=0x%02lx\n", err);
             return RETURN_FAIL;
         }
 
-        err = sdcmd_read_block(iobase, test_block << test_shift, (UBYTE *)&read_buffer[0]);
+        err = sdcmd_read_block(&sd, test_block, (UBYTE *)&read_buffer[0]);
         if (err) {
             Printf("FAILED READBACK, err=0x%02lx\n", err);
             return RETURN_FAIL;
@@ -141,7 +156,7 @@ AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\
                 }
                 err++;
                 Printf("$%04lx: $%08lx [expected $%08lx]\n", i*sizeof(ULONG),
-                        write_buffer[i], read_buffer[i]);
+                        read_buffer[i], write_buffer[i]);
             }
         }
         if (err)
@@ -151,13 +166,13 @@ AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\
         Printf("WRITE Test: %ld bytes, at block %ld: ",
                 512*15, test_block);
 
-        err = sdcmd_write_blocks(iobase, (test_block+1) << test_shift, (UBYTE *)&write_buffer[512/sizeof(ULONG)], 15);
+        err = sdcmd_write_blocks(&sd, test_block+1, (UBYTE *)&write_buffer[512/sizeof(ULONG)], 15);
         if (err) {
             Printf("FAILED WRITE, err=0x%02lx\n", err);
             return RETURN_FAIL;
         }
 
-        err = sdcmd_read_blocks(iobase, (test_block+1) << test_shift, (UBYTE *)&read_buffer[512/sizeof(ULONG)], 15);
+        err = sdcmd_read_blocks(&sd, test_block+1, (UBYTE *)&read_buffer[512/sizeof(ULONG)], 15);
         if (err) {
             Printf("FAILED READBACK, err=0x%02lx\n", err);
             return RETURN_FAIL;
@@ -172,7 +187,7 @@ AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\
                 }
                 err++;
                 Printf("$%04lx: $%08lx [expected $%08lx]\n", i*sizeof(ULONG),
-                        write_buffer[i], read_buffer[i]);
+                        read_buffer[512/sizeof(ULONG) + i], write_buffer[512/sizeof(ULONG) + i]);
             }
         }
         if (err)
@@ -182,6 +197,27 @@ AROS_SHAH(BOOL     , ,WRITE,/S,    FALSE, "Perform WRITE test to last 16 blocks\
     }
 
     if (readTest) {
+        Printf("READ Test: %ld bytes, at block %ld: ",
+                512, test_block);
+
+        err = sdcmd_read_block(&sd, test_block, (UBYTE *)&read_buffer[0]);
+        if (err) {
+            Printf("FAILED READ, err=0x%02lx\n", err);
+            return RETURN_FAIL;
+        }
+       
+        Printf("PASSED\n");
+
+        Printf("READ Test: %ld bytes, at block %ld: ",
+                512*15, test_block);
+
+        err = sdcmd_read_blocks(&sd, test_block+1, (UBYTE *)&read_buffer[512/sizeof(ULONG)], 15);
+        if (err) {
+            Printf("FAILED READ, err=0x%02lx\n", err);
+            return RETURN_FAIL;
+        }
+       
+        Printf("PASSED\n");
     }
 
     return RETURN_OK;

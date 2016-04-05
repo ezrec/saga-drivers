@@ -28,26 +28,13 @@
 
 #include <proto/arossupport.h>
 
-#if DEBUG
-#define bug(x,args...)   kprintf(x ,##args)
-#define debug(x,args...) bug("%s:%ld " x "\n", __func__, (unsigned long)__LINE__ ,##args)
-#else
-#define bug(x,args...)   do { } while (0)
-#define debug(x,args...) do { } while (0)
-#endif
-
 static inline UBYTE Read8(IPTR addr)
 {
-    UBYTE val;
-    
-    val = *(volatile UBYTE *)addr;
-    if (DEBUG > 1) bug("0x%06lx => 0x%02lx\n", addr, val);
-    return val;
+    return *(volatile UBYTE *)addr;
 }
 
 static inline VOID Write8(IPTR addr, UBYTE value)
 {
-    if (DEBUG > 1) bug("0x%06lx <= 0x%02lx\n", addr, value);
     if (!SIMULATE) {
         *(volatile UBYTE *)addr = value;
     }
@@ -55,16 +42,11 @@ static inline VOID Write8(IPTR addr, UBYTE value)
 
 static inline UWORD Read16(IPTR addr)
 {
-    UWORD val;
-
-    val = *(volatile UWORD *)addr;
-    if (DEBUG > 1) bug("0x%06lx => 0x%04lx\n", addr, val);
-    return val;
+    return *(volatile UWORD *)addr;
 }
 
 static inline VOID Write16(IPTR addr, UWORD value)
 {
-    if (DEBUG > 1) bug("0x%06lx <= 0x%04lx\n", addr, value);
     if (!SIMULATE) {
         *(volatile UWORD *)addr = value;
     }
@@ -72,16 +54,11 @@ static inline VOID Write16(IPTR addr, UWORD value)
 
 static inline ULONG Read32(IPTR addr)
 {
-    ULONG val;
-
-    val = *(volatile ULONG *)addr;
-    if (DEBUG > 1) bug("0x%06lx => 0x%08lx\n", addr, val);
-    return val;
+    return *(volatile ULONG *)addr;
 }
 
 static inline VOID Write32(IPTR addr, ULONG value)
 {
-    if (DEBUG > 1) bug("0x%06lx <= 0x%08lx\n", addr, value);
     if (!SIMULATE) {
         *(volatile ULONG *)addr = value;
     }

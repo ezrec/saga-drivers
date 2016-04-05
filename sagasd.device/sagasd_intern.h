@@ -28,7 +28,7 @@ struct SAGASDBase {
         ULONG       sdu_Stack[1024];          /* 4K stack */
         BOOL        sdu_Enabled;
 
-        IPTR        sdu_IOBase;
+        struct sdcmd sdu_SDCmd;
         struct MsgPort *sdu_MsgPort;
 
         BOOL sdu_Present;               /* Is a device detected? */
@@ -36,7 +36,6 @@ struct SAGASDBase {
         BOOL sdu_ReadOnly;              /* Is the device read-only? */
         BOOL sdu_Motor;                 /* TD_MOTOR state */
         ULONG sdu_ChangeNum;
-        struct sdcmd_info sdu_Identify;
 
         struct Library *sdu_ExecBase;
     } sd_Unit[SAGASD_UNITS];

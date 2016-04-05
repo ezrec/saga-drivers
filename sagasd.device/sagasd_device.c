@@ -24,6 +24,7 @@
  */
 
 #include <string.h>     // memset
+#include <stdarg.h>
 
 #include <exec/resident.h>
 #include <exec/errors.h>
@@ -53,6 +54,29 @@
 
 #include LC_LIBDEFS_FILE
 
+#define SAGASD_RETRY    5       /* By default, retry up to 5 times */
+
+#if DEBUG
+#define bug(x,args...)   kprintf(x ,##args)
+#define debug(x,args...) bug("%s:%ld " x "\n", __func__, (unsigned long)__LINE__ ,##args)
+#else
+#define bug(x,args...)   do { } while (0)
+#define debug(x,args...) do { } while (0)
+#endif
+
+static VOID SAGASD_log(struct sdcmd *sd, int level, const char *format, ...)
+{
+    va_list args;
+
+    if (level > DEBUG)
+        return;
+
+    va_start(args, format);
+    vkprintf(format, args);
+    kprintf("\n");
+    va_end(args);
+}
+
 /* Execute the SD read or write command, return IOERR_* or TDERR_*
  */
 static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
@@ -62,16 +86,15 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct SAGASDUnit *sdu = (struct SAGASDUnit *)io->io_Unit;
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
-    ULONG block_size, bmask;
+    ULONG block, block_size, bmask;
     UBYTE sderr;
-    BOOL is_sdhc = (sdu->sdu_Identify.ocr & SDOCRF_HCS) ? TRUE : FALSE;
 
     debug("%s: Flags: $%lx, Command: $%04lx, Offset: $%lx%08lx Length: %5ld, Data: $%08lx",
             is_write ? "write" : "read",
             io->io_Flags, io->io_Command,
             (ULONG)(off64 >> 32), (ULONG)off64, len, data);
 
-    block_size = sdu->sdu_Identify.block_size;
+    block_size = sdu->sdu_SDCmd.info.block_size;
     bmask = block_size - 1;
 
     /* Read/Write is not permitted if the unit is not Valid */
@@ -91,7 +114,7 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
 
     /* Make in units of sector size */
     len /= block_size;
-    off64 /= block_size;
+    block = off64 / block_size;
 
     /* Nothing to do... */
     if (len == 0) {
@@ -99,17 +122,13 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
         return 0;
     }
 
-    debug("%s: block=%ld, blocks=%ld", is_write ? "Write" : "Read", (ULONG)off64, len);
-
-    /* If not SDHC format, bring back to block size */
-    if (!is_sdhc)
-        off64 *= block_size;
+    debug("%s: block=%ld, blocks=%ld", is_write ? "Write" : "Read", block, len);
 
     /* Do the IO */
     if (is_write) {
-        sderr = sdcmd_write_blocks(sdu->sdu_IOBase, (ULONG)off64, data, len);
+        sderr = sdcmd_write_blocks(&sdu->sdu_SDCmd, block, data, len);
     } else {
-        sderr = sdcmd_read_blocks(sdu->sdu_IOBase, (ULONG)off64, data, len);
+        sderr = sdcmd_read_blocks(&sdu->sdu_SDCmd, block, data, len);
     }
 
     debug("sderr=$%02x", sderr);
@@ -271,12 +290,12 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
 
         geom = data;
         memset(geom, 0, len);
-        geom->dg_SectorSize   = sdu->sdu_Identify.block_size;
-        geom->dg_TotalSectors = sdu->sdu_Identify.blocks;
-        geom->dg_Cylinders    = sdu->sdu_Identify.blocks / 1024;
+        geom->dg_SectorSize   = sdu->sdu_SDCmd.info.block_size;
+        geom->dg_TotalSectors = sdu->sdu_SDCmd.info.blocks;
+        geom->dg_Cylinders    = sdu->sdu_SDCmd.info.blocks / 1024;
         geom->dg_CylSectors   = 1024;
         geom->dg_Heads        = 16;
-        geom->dg_TrackSectors = sdu->sdu_Identify.blocks / 64;
+        geom->dg_TrackSectors = sdu->sdu_SDCmd.info.blocks / 64;
         geom->dg_BufMemType   = MEMF_PUBLIC;
         geom->dg_DeviceType   = DG_DIRECT_ACCESS;
         geom->dg_Flags        = DGF_REMOVABLE;
@@ -329,13 +348,13 @@ static void SAGASD_Detect(struct Library *SysBase, struct SAGASDUnit *sdu)
     BOOL present;
 
     /* Update sdu_Present, regardless */
-    present = sdcmd_present(sdu->sdu_IOBase);
+    present = sdcmd_present(&sdu->sdu_SDCmd);
     if (present != sdu->sdu_Present) {
         if (present) {
             UBYTE sderr;
 
             /* Re-run the identify */
-            sderr = sdcmd_detect(sdu->sdu_IOBase, &sdu->sdu_Identify);
+            sderr = sdcmd_detect(&sdu->sdu_SDCmd);
 
             Forbid();
             /* Make the drive present. */
@@ -343,7 +362,7 @@ static void SAGASD_Detect(struct Library *SysBase, struct SAGASDUnit *sdu)
             sdu->sdu_ChangeNum++;
             sdu->sdu_Valid = (sderr == 0) ? TRUE : FALSE;
             debug("========= sdu_Valid: %s", sdu->sdu_Valid ? "TRUE" : "FALSE");
-            debug("========= Blocks: %ld", sdu->sdu_Identify.blocks);
+            debug("========= Blocks: %ld", sdu->sdu_SDCmd.info.blocks);
             Permit();
         } else {
             Forbid();
@@ -551,20 +570,20 @@ static void SAGASD_BootNode(
     debug("");
 
     dosdevname[2] += unit;
-    debug("Adding bootnode %s %d x %d", dosdevname,sdu->sdu_Identify.blocks, sdu->sdu_Identify.block_size);
+    debug("Adding bootnode %s %d x %d", dosdevname,sdu->sdu_SDCmd.info.blocks, sdu->sdu_SDCmd.info.block_size);
 
     pp[0] = (IPTR)dosdevname;
     pp[1] = (IPTR)"sagasd.device";
     pp[2] = unit;
     pp[3] = 0;
     pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
-    pp[DE_SIZEBLOCK + 4] = sdu->sdu_Identify.block_size >> 2;
+    pp[DE_SIZEBLOCK + 4] = sdu->sdu_SDCmd.info.block_size >> 2;
     pp[DE_NUMHEADS + 4] = 16;
     pp[DE_SECSPERBLOCK + 4] = 1;
     pp[DE_BLKSPERTRACK + 4] = 64;
     pp[DE_RESERVEDBLKS + 4] = 2;
     pp[DE_LOWCYL + 4] = 0;
-    pp[DE_HIGHCYL + 4] = sdu->sdu_Identify.blocks / 1024;
+    pp[DE_HIGHCYL + 4] = sdu->sdu_SDCmd.info.blocks / 1024;
     pp[DE_NUMBUFFERS + 4] = 1;
     pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
     pp[DE_MAXTRANSFER + 4] = 0x00200000;
@@ -594,13 +613,16 @@ static void SAGASD_InitUnit(struct SAGASDBase * SAGASDBase, int id)
 
     switch (id) {
     case 0:
-        sdu->sdu_IOBase  = SAGA_SD_BASE;
+        sdu->sdu_SDCmd.iobase  = SAGA_SD_BASE;
         sdu->sdu_Enabled = TRUE;
         break;
     default:
         sdu->sdu_Enabled = FALSE;
     }
 
+    sdu->sdu_SDCmd.func.log = SAGASD_log;
+    sdu->sdu_SDCmd.retry.read = SAGASD_RETRY;
+    sdu->sdu_SDCmd.retry.write = SAGASD_RETRY;
 
     /* If the unit is present, create an IO task for it
      */
