@@ -39,6 +39,7 @@
 #include <devices/newstyle.h>
 #include <devices/trackdisk.h>
 #include <devices/timer.h>
+#include <devices/scsidisk.h>
 
 #include <aros/symbolsets.h>
 
@@ -53,6 +54,9 @@
 #include <saga/sd.h>
 
 #include LC_LIBDEFS_FILE
+
+#define SAGASD_HEADS    16
+#define SAGASD_SECTORS  64
 
 #define SAGASD_RETRY    5       /* By default, retry up to 5 times */
 
@@ -157,6 +161,290 @@ static LONG SAGASD_ReadWrite(struct IORequest *io, UQUAD off64, BOOL is_write)
     return 0;
 }
 
+static LONG SAGASD_PerformSCSI(struct IORequest *io)
+{
+    struct SAGASDBase *sd = (struct SAGASDBase *)io->io_Device;
+    //struct Library *SysBase = sd->sd_ExecBase;
+    struct SAGASDUnit *sdu = (struct SAGASDUnit *)io->io_Unit;
+    struct IOStdReq *iostd = (struct IOStdReq *)io;
+    struct SCSICmd *scsi = iostd->io_Data;
+    struct sdcmd *sdc = &sdu->sdu_SDCmd;
+    UBYTE *data = (UBYTE *)scsi->scsi_Data;
+    ULONG i, block, blocks;
+    LONG err;
+    UBYTE r1;
+
+    debug("len=%ld, cmd = %02lx %02lx %02lx ... (%ld)",
+            iostd->io_Length, scsi->scsi_Command[0],
+            scsi->scsi_Command[1], scsi->scsi_Command[2],
+            scsi->scsi_CmdLength);
+    if (iostd->io_Length < sizeof(*scsi)) {
+        // RDPrep sends a bad io_Length sometimes
+        debug("====== BAD PROGRAM: iostd->io_Length < sizeof(struct SCSICmd)");
+        //return IOERR_BADLENGTH;
+    }
+
+    if (scsi->scsi_CmdLength < 6)
+        return IOERR_BADLENGTH;
+
+    if (scsi->scsi_Command == NULL)
+        return IOERR_BADADDRESS;
+
+    scsi->scsi_Actual = 0;
+
+    switch (scsi->scsi_Command[0]) {
+    case 0x00:      // TEST_UNIT_READY
+        err = 0;
+        break;
+    case 0x12:      // INQUIRY
+        for (i = 0; i < scsi->scsi_Length; i++) {
+            UBYTE val;
+
+            switch (i) {
+            case 0: // direct-access device
+                    val = ((sdu->sdu_Enabled ? 0 : 1) << 5) | 0;
+                    break;
+            case 1: // RMB = 1
+                    val = (1 << 7);
+                    break;
+            case 2: // VERSION = 0
+                    val = 0;
+                    break;
+            case 3: // NORMACA=0, HISUP = 0, RESPONSE_DATA_FORMAT = 2
+                    val = (0 << 5) | (0 << 4) | 2;
+                    break;
+            case 4: // ADDITIONAL_LENGTH = 44 - 4
+                    val = 44 - 4;
+                    break;
+            default:
+                    if (i >= 8 && i < 16)
+                        val = "Vampire "[i - 8];
+                    else if (i >= 16 && i < 32)
+                        val = "SAGA-SD        "[i - 16];
+                    else if (i >= 32 && i < 36)
+                        val = ((UBYTE *)(((struct Library *)sd)->lib_IdString))[i-32];
+                    else if (i >= 36 && i < 44) {
+                        val = sdc->info.cid[7 + (i-36)/2];
+                        if ((i & 1) == 0)
+                            val >>= 4;
+                        val = "0123456789ABCDEF"[val & 0xf];
+                    } else
+                        val = 0;
+                    break;
+            }
+
+            data[i] = val;
+        }
+
+        scsi->scsi_Actual = i;
+        err = 0;
+        break;
+    case 0x08: // READ (6)
+        block = scsi->scsi_Command[1] & 0x1f;
+        block = (block << 8) | scsi->scsi_Command[2];
+        block = (block << 8) | scsi->scsi_Command[3];
+        blocks = scsi->scsi_Command[4];
+        debug("READ (6) %ld @%ld => $%lx (%ld)",
+                blocks, block, data, scsi->scsi_Length);
+        if (block + blocks > sdc->info.blocks) {
+            err = IOERR_BADADDRESS;
+            break;
+        }
+        if (scsi->scsi_Length < blocks * sdc->info.block_size) {
+            debug("Len (%ld) too small (%ld)", scsi->scsi_Length, blocks * sdc->info.block_size);
+            err = IOERR_BADLENGTH;
+            break;
+        }
+        if (data == NULL) {
+            err = IOERR_BADADDRESS;
+            break;
+        }
+        r1 = sdcmd_read_blocks(sdc, block, data, blocks);
+        if (r1) {
+            err = HFERR_BadStatus;
+            break;
+        }
+
+        scsi->scsi_Actual = scsi->scsi_Length;
+        err = 0;
+        break;
+    case 0x0a: // WRITE (6)
+        block = scsi->scsi_Command[1] & 0x1f;
+        block = (block << 8) | scsi->scsi_Command[2];
+        block = (block << 8) | scsi->scsi_Command[3];
+        blocks = scsi->scsi_Command[4];
+        debug("WRITE (6) %ld @%ld => $%lx (%ld)",
+                blocks, block, data, scsi->scsi_Length);
+        if (block + blocks > sdc->info.blocks) {
+            err = IOERR_BADADDRESS;
+            break;
+        }
+        if (scsi->scsi_Length < blocks * sdc->info.block_size) {
+            debug("Len (%ld) too small (%ld)", scsi->scsi_Length, blocks * sdc->info.block_size);
+            err = IOERR_BADLENGTH;
+            break;
+        }
+        if (data == NULL) {
+            err = IOERR_BADADDRESS;
+            break;
+        }
+        r1 = sdcmd_write_blocks(sdc, block, data, blocks);
+        if (r1) {
+            err = HFERR_BadStatus;
+            break;
+        }
+
+        scsi->scsi_Actual = scsi->scsi_Length;
+        err = 0;
+        break;
+    case 0x25: // READ CAPACITY (10)
+        if (scsi->scsi_CmdLength < 10) {
+            err = HFERR_BadStatus;
+            break;
+        }
+
+        block = scsi->scsi_Command[2];
+        block = (block << 8) | scsi->scsi_Command[3];
+        block = (block << 8) | scsi->scsi_Command[4];
+        block = (block << 8) | scsi->scsi_Command[5];
+
+        if ((scsi->scsi_Command[8] & 1) || block != 0) {
+            // PMI Not supported
+            err = HFERR_BadStatus;
+            break;
+        }
+
+        if (scsi->scsi_Length < 8) {
+            err = IOERR_BADLENGTH;
+            break;
+        }
+
+        for (i = 0; i < 4; i++)
+            data[0 + i] = (sdc->info.blocks >> (24 - i*8)) & 0xff;
+        for (i = 0; i < 4; i++)
+            data[4 + i] = (sdc->info.block_size >> (24 - i*8)) & 0xff;
+
+        scsi->scsi_Actual = 8;
+        err = 0;
+        break;
+    case 0x1a: // MODE SENSE (6)
+        data[0] = 3 + 8 + 0x16;
+        data[1] = 0; // MEDIUM TYPE
+        data[2] = 0;
+        data[3] = 8;
+        if (sdc->info.blocks > (1 << 24))
+            blocks = 0xffffff;
+        else
+            blocks = sdc->info.blocks;
+        data[4] = (blocks >> 16) & 0xff;
+        data[5] = (blocks >>  8) & 0xff;
+        data[6] = (blocks >>  0) & 0xff;
+        data[7] = 0;
+        data[8] = 0;
+        data[9] = 0;
+        data[10] = (sdc->info.block_size >> 8) & 0xff;
+        data[11] = (sdc->info.block_size >> 0) & 0xff;
+        switch (((UWORD)scsi->scsi_Command[2] << 8) | scsi->scsi_Command[3]) {
+        case 0x0300: // Format Device Mode
+            for (i = 0; i < scsi->scsi_Length - 12; i++) {
+                UBYTE val;
+
+                switch (i) {
+                case 0: // PAGE CODE
+                    val = 0x03;
+                    break;
+                case 1: // PAGE LENGTH
+                    val = 0x16;
+                    break;
+                case 2: // TRACKS PER ZONE 15..8
+                    val = (SAGASD_HEADS >> 8) & 0xff;
+                    break;
+                case 3: // TRACKS PER ZONE 7..0
+                    val = (SAGASD_HEADS >> 0) & 0xff;
+                    break;
+                case 10: // SECTORS PER TRACK 15..8
+                    val = (SAGASD_SECTORS >> 8) & 0xff;
+                    break;
+                case 11: // SECTORS PER TRACK 7..0
+                    val = (SAGASD_SECTORS >> 0) & 0xff;
+                    break;
+                case 12: // DATA BYTES PER PHYSICAL SECTOR 15..8
+                    val = (sdc->info.block_size >> 8) & 0xff;
+                    break;
+                case 13: // DATA BYTES PER PHYSICAL SECTOR 7..0
+                    val = (sdc->info.block_size >> 0) & 0xff;
+                    break;
+                case 20: // HSEC = 1, RMB = 1
+                    val = (1 << 6) | (1 << 5);
+                    break;
+                default:
+                    val = 0;
+                    break;
+                }
+
+                debug("data[%2ld] = $%02lx", 12 + i, val);
+                data[12 + i] = val;
+            }
+
+            scsi->scsi_Actual = data[0] + 1;
+            err = 0;
+            break;
+        case 0x0400: // Rigid Drive Geometry
+            for (i = 0; i < scsi->scsi_Length - 12; i++) {
+                UBYTE val;
+
+                switch (i) {
+                case 0: // PAGE CODE
+                    val = 0x04;
+                    break;
+                case 1: // PAGE LENGTH
+                    val = 0x16;
+                    break;
+                case 2: // CYLINDERS 23..16
+                    val = ((sdc->info.blocks / SAGASD_HEADS / SAGASD_SECTORS) >> 16) & 0xff;
+                    break;
+                case 3: // CYLINDERS 15..8
+                    val = ((sdc->info.blocks / SAGASD_HEADS / SAGASD_SECTORS) >> 8) & 0xff;
+                    break;
+                case 4: //  CYLINDERS 7..0
+                    val = ((sdc->info.blocks / SAGASD_HEADS / SAGASD_SECTORS) >> 0) & 0xff;
+                    break;
+                case 5: // HEADS
+                    val = SAGASD_HEADS;
+                    break;
+                default:
+                    val = 0;
+                    break;
+                }
+
+                data[12 + i] = val;
+                debug("data[%2ld] = $%02lx", 12 + i, val);
+            }
+
+            scsi->scsi_Actual = data[0] + 1;
+            err = 0;
+            break;
+        default:
+            debug("MODE SENSE: Unknown Page $%02lx.$%02lx",
+                    scsi->scsi_Command[2], scsi->scsi_Command[3]);
+            err = HFERR_BadStatus;
+            break;
+        }
+        break;
+    default:
+        debug("Unknown SCSI command %d (%d)\n", scsi->scsi_Command[0], scsi->scsi_CmdLength);
+        err = IOERR_NOCMD;
+        break;
+    }
+
+    if (err == 0)
+        iostd->io_Actual = sizeof(*scsi);
+    else
+        iostd->io_Actual = 0;
+
+    return err;
+}
+
 #define CMD_NAME(x) if (cmd == x) return #x
 
 static inline const char *cmd_name(int cmd)
@@ -180,6 +468,7 @@ static inline const char *cmd_name(int cmd)
     CMD_NAME(NSCMD_DEVICEQUERY);
     CMD_NAME(NSCMD_TD_READ64);
     CMD_NAME(NSCMD_TD_WRITE64);
+    CMD_NAME(HD_SCSICMD);
 
     return "Unknown";
 }
@@ -211,6 +500,7 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
         NSCMD_DEVICEQUERY,
         NSCMD_TD_READ64,
         NSCMD_TD_WRITE64,
+        HD_SCSICMD,
         0
     };
     struct SAGASDBase *sd = (struct SAGASDBase *)io->io_Device;
@@ -292,10 +582,10 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
         memset(geom, 0, len);
         geom->dg_SectorSize   = sdu->sdu_SDCmd.info.block_size;
         geom->dg_TotalSectors = sdu->sdu_SDCmd.info.blocks;
-        geom->dg_Cylinders    = sdu->sdu_SDCmd.info.blocks / 1024;
-        geom->dg_CylSectors   = 1024;
-        geom->dg_Heads        = 16;
-        geom->dg_TrackSectors = sdu->sdu_SDCmd.info.blocks / 64;
+        geom->dg_Cylinders    = sdu->sdu_SDCmd.info.blocks / (SAGASD_HEADS * SAGASD_SECTORS);
+        geom->dg_CylSectors   = SAGASD_HEADS * SAGASD_SECTORS;
+        geom->dg_Heads        = SAGASD_HEADS;
+        geom->dg_TrackSectors = SAGASD_SECTORS;
         geom->dg_BufMemType   = MEMF_PUBLIC;
         geom->dg_DeviceType   = DG_DIRECT_ACCESS;
         geom->dg_Flags        = DGF_REMOVABLE;
@@ -331,6 +621,9 @@ static LONG SAGASD_PerformIO(struct IORequest *io)
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
         err = SAGASD_ReadWrite(io, off64, FALSE);
+        break;
+    case HD_SCSICMD:
+        err = SAGASD_PerformSCSI(io);
         break;
     default:
         debug("Unknown IO command: %d", io->io_Command);
@@ -578,12 +871,12 @@ static void SAGASD_BootNode(
     pp[3] = 0;
     pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
     pp[DE_SIZEBLOCK + 4] = sdu->sdu_SDCmd.info.block_size >> 2;
-    pp[DE_NUMHEADS + 4] = 16;
+    pp[DE_NUMHEADS + 4] = SAGASD_HEADS;
     pp[DE_SECSPERBLOCK + 4] = 1;
-    pp[DE_BLKSPERTRACK + 4] = 64;
+    pp[DE_BLKSPERTRACK + 4] = SAGASD_SECTORS;
     pp[DE_RESERVEDBLKS + 4] = 2;
     pp[DE_LOWCYL + 4] = 0;
-    pp[DE_HIGHCYL + 4] = sdu->sdu_SDCmd.info.blocks / 1024;
+    pp[DE_HIGHCYL + 4] = sdu->sdu_SDCmd.info.blocks / (SAGASD_HEADS * SAGASD_SECTORS);
     pp[DE_NUMBUFFERS + 4] = 1;
     pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC;
     pp[DE_MAXTRANSFER + 4] = 0x00200000;
@@ -719,8 +1012,6 @@ static int GM_UNIQUENAME(open)(struct SAGASDBase * SAGASDBase,
                                struct IOExtTD *iotd, ULONG unitnum,
                                ULONG flags)
 {
-    debug("");
-
     iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
 
     /* Is the requested unitNumber valid? */
@@ -736,8 +1027,9 @@ static int GM_UNIQUENAME(open)(struct SAGASDBase * SAGASDBase,
     	    sdu->sdu_Unit.unit_OpenCnt++;
     	    iotd->iotd_Req.io_Error = 0;
 	}
+
+        debug("Open=%d", unitnum, iotd->iotd_Req.io_Error);
     }
-    debug("Open=%d", unitnum, iotd->iotd_Req.io_Error);
   
     return iotd->iotd_Req.io_Error == 0;
 
