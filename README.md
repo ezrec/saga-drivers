@@ -52,7 +52,22 @@ use it on an AmigaOS system.
 * Create a `C:IconX` script with the following content:
 
 ```
-Delete DEVS:DOSDrivers/SD?#
-SYS:GiggleDisk/Bin/GiggleDisk DEVICE=sagasd.device UNIT=0 PREFIX=SD TO=DEVS:DOSDrivers
-Mount >NIL: DEVS:DOSDrivers/~(SD#?.info)
+; Semi-automatic mounting for SAGA SD devices
+; Requires 'GiggleDisk' from AmiNet to be in your
+; path - see http://aminet.net/package/disk/misc/giggledisk.lha
+;
+If EXISTS T:SDMount
+    Echo "SD has already been mounted:"
+    Echo ""
+    Echo "Partitions"
+    Echo "----------"
+    Cd T:SDMount
+    List LFORMAT="    %s:" ~(#?.info)
+    Echo ""
+    Ask "[EXIT]"
+Else
+    MakeDir T:SDMount
+    GiggleDisk DEVICE=sagasd.device UNIT=0 PREFIX=SD TO=T:SDMount
+    Mount >NIL: T:SDMount/~(#?.info)
+EndIf
 ```
