@@ -54,6 +54,9 @@
 #define warn(fmt,args...)       sdcmd_log(sd, SDLOG_WARN, fmt ,##args)
 #define error(fmt,args...)      sdcmd_log(sd, SDLOG_ERROR, fmt ,##args)
 
+#define SDCMD_CLKDIV_SLOW       0x10
+#define SDCMD_CLKDIV_FAST       0x01
+
 static UBYTE crc7(UBYTE crc, UBYTE byte)
 {
     int i;
@@ -117,12 +120,20 @@ VOID sdcmd_select(struct sdcmd *sd, BOOL cs)
 {
     UWORD val;
 
-    val = SAGA_SD_CTL_NCS(cs ? 0 : 1);
+    val = cs ? 0 : SAGA_SD_CTL_NCS;
 
     diag("SD_CTL  => $%04lx", val);
 
     Write16(sd->iobase + SAGA_SD_CTL, val);
 }
+
+static VOID sdcmd_clkdiv(struct sdcmd *sd, UBYTE val)
+{
+    diag("SD_CLK  => $%04lx", val);
+
+    Write16(sd->iobase + SAGA_SD_CLK, val);
+}
+
 
 void sdcmd_send(struct sdcmd *sd, UBYTE cmd, ULONG arg)
 {
@@ -411,6 +422,9 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
     if (!sdcmd_present(sd))
         return ~0;
 
+    /* Switch to slow speed mode */
+    sdcmd_clkdiv(sd, SDCMD_CLKDIV_SLOW);
+
     /* Emit at least 74 clocks of idle */
     sdcmd_select(sd, TRUE);
     for (i = 0; i < 10; i++)
@@ -555,6 +569,9 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
         }
         info("blocks=%ld", info->blocks);
     }
+
+    /* Switch to high speed mode */
+    sdcmd_clkdiv(sd, SDCMD_CLKDIV_FAST);
 
 exit:
     sdcmd_select(sd, FALSE);
