@@ -96,6 +96,33 @@ static UBYTE sdcmd_in(struct sdcmd *sd)
     return val;
 }
 
+static UWORD sdcmd_ins(struct sdcmd *sd, UWORD crc, UBYTE *buff, size_t len)
+{
+    UBYTE val;
+    ULONG dataio = sd->iobase + SAGA_SD_DATA;
+
+    if (len == 0)
+        return crc;
+
+    /* Since the read of the SAGA_SD_DATA will stall until
+     * filled by the SPI, we amortize that cost by computing
+     * the CRC16 while waiting for the next fill.
+     */
+    Write8(dataio, 0xff);
+    for (len--; len > 0; len--, buff++) {
+        val = Read8(dataio + SAGA_SD_DATA);
+        Write8(dataio + SAGA_SD_DATA, 0xff);
+        crc = crc16(crc, val);
+        *buff = val;
+        if (DEBUG)
+            diag("SD_DATA => $%02lx", val);
+    }
+    val = Read8(dataio + SAGA_SD_DATA);
+    crc = crc16(crc, val);
+    *buff = val;
+
+    return crc;
+}
             
 BOOL sdcmd_present(struct sdcmd *sd)
 {
@@ -270,13 +297,7 @@ UBYTE sdcmd_read_packet(struct sdcmd *sd, UBYTE *buff, int len)
         return SDERRF_TIMEOUT;
     }
 
-    crc = 0;
-
-    for (i = 0; i < len; i++, buff++) {
-        byte = sdcmd_in(sd);
-        crc = crc16(crc, byte);
-        *buff = byte;
-    }
+    crc = sdcmd_ins(sd, 0, buff, len);
 
     /* Read the CRC16 */
     tmp = (UWORD)sdcmd_in(sd) << 8;
