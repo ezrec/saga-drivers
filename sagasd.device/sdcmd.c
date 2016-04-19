@@ -34,19 +34,11 @@
 
 #include "common.h"
 
-#if DEBUG
 #define sdcmd_log(sd,level,fmt,args...) \
     do { \
         if (sd->func.log) \
             sd->func.log(sd, level, "%s:%ld " fmt, __func__, (ULONG)__LINE__ ,##args); \
     } while (0)
-#else
-#define sdcmd_log(sd,level,fmt,args...) \
-    do { \
-        if (sd->func.log) \
-            sd->func.log(sd, level, fmt ,##args); \
-    } while (0)
-#endif
 
 #define diag(fmt,args...)       sdcmd_log(sd, SDLOG_DIAG, fmt ,##args)
 #define debug(fmt,args...)      sdcmd_log(sd, SDLOG_DEBUG, fmt ,##args)
