@@ -103,13 +103,19 @@ AROS_SHAH(BOOL     , P96= ,PICASSO96,/S, FALSE, "Use Picasso96, not hardware ban
               (mode == SAGA_VIDEO_FORMAT_RGB24) ? 3 :
               (mode == SAGA_VIDEO_FORMAT_RGB32) ? 4 : 1;
     int i, gx, gy, x, y;
-    ULONG here = SAGA_VIDEO_MEMBASE;
+    UBYTE *here;
 
     if (p96)
         return p96mode((struct Library *)SysBase, (struct Library *)DOSBase, width, height, mode);
 
+    here = AllocMem(SAGA_VIDEO_MEMSIZE, MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
+    if (!here) {
+        Printf("Can't allocate %ldMB memory window\n", SAGA_VIDEO_MEMSIZE / 1024 / 1024);
+        return RETURN_FAIL;
+    }
+
     /* Set up video hardware */
-    Printf("%ldx%ld, Format %ld", width, height, mode);
+    Printf("@$%08lx %ldx%ld, Format %ld", (ULONG)here, width, height, mode);
     if (dx) {
         mode |= SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_X);
         Printf(", DoubleX");
@@ -120,7 +126,7 @@ AROS_SHAH(BOOL     , P96= ,PICASSO96,/S, FALSE, "Use Picasso96, not hardware ban
     }
     Printf("\n");
 
-    Write32(SAGA_VIDEO_PLANEPTR, SAGA_VIDEO_MEMBASE);
+    Write32(SAGA_VIDEO_PLANEPTR, (ULONG)here);
     Write16(SAGA_VIDEO_WIDTH, width);
     Write16(SAGA_VIDEO_HEIGHT, height);
     Write16(SAGA_VIDEO_MODE, mode);
@@ -131,7 +137,7 @@ AROS_SHAH(BOOL     , P96= ,PICASSO96,/S, FALSE, "Use Picasso96, not hardware ban
 
     /* Clear 4M of ram */
     for (i = 0; i < SAGA_VIDEO_MEMSIZE; i += sizeof(ULONG))
-        Write32(SAGA_VIDEO_MEMBASE + i, 0);
+        Write32((ULONG)here + i, 0);
 
     /* Fill visible video memory with a 8x8 grid */
     for (gy = 0; gy < height/8; gy++) {
@@ -140,11 +146,13 @@ AROS_SHAH(BOOL     , P96= ,PICASSO96,/S, FALSE, "Use Picasso96, not hardware ban
             for (gx = 0; gx < width/8; gx++) {
                 color++;
                 for (x = 0; x < 8*bpp; x++, here++)
-                    Write8(here, color);
+                    Write8((ULONG)here, color);
             }
             here += padding;
         }
     }
+
+    FreeMem(here, SAGA_VIDEO_MEMSIZE);
 
     return RETURN_OK;
 

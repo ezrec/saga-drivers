@@ -47,6 +47,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *SysBase = SAGABase->sc_ExecBase;
+
     debug("");
 
     // If sc_BoardInfo is set, it means that the driver was already loaded,
@@ -58,7 +60,6 @@
 
     // If the user is holding down SHIFT, then don't load.
     if (1) {
-        struct Library *SysBase = SAGABase->sc_ExecBase;
         struct IOStdReq io;
 
         if (0 == OpenDevice("input.device", NULL, &io, NULL)) {
@@ -81,10 +82,10 @@
 
     memset(&SAGABase->sc_CLUT[0], 0, sizeof(SAGABase->sc_CLUT));
 
-    bi->MemoryBase = (APTR)(IPTR)SAGA_VIDEO_MEMBASE;
+    bi->MemoryBase = AllocMem(SAGA_VIDEO_MEMSIZE, MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
     bi->MemorySize = SAGA_VIDEO_MEMSIZE;
  
-    return TRUE;
+    return (bi->MemoryBase ? TRUE : FALSE);
 
     AROS_LIBFUNC_EXIT
 }
