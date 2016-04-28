@@ -144,6 +144,17 @@ VOID sdcmd_select(struct sdcmd *sd, BOOL cs)
     diag("SD_CTL  => $%04lx", val);
 
     Write16(sd->iobase + SAGA_SD_CTL, val);
+    sdcmd_out(sd, 0xff);
+
+    /*  Wait for card ready */
+    if (cs) {
+        int i;
+        for (i = 0; i < SDCMD_TIMEOUT; i++) {
+            UBYTE r1 = sdcmd_in(sd);
+            if (r1 == 0xff)
+                break;
+        }
+    }
 }
 
 static VOID sdcmd_clkdiv(struct sdcmd *sd, UBYTE val)

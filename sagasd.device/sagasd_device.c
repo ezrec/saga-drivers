@@ -58,7 +58,7 @@
 #define SAGASD_HEADS    16
 #define SAGASD_SECTORS  64
 
-#define SAGASD_RETRY    5       /* By default, retry up to 5 times */
+#define SAGASD_RETRY    300      /* By default, retry up to N times */
 
 #if DEBUG
 #define bug(x,args...)   kprintf(x ,##args)
