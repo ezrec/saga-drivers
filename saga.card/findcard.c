@@ -14,6 +14,8 @@
 
 #include "saga_intern.h"
 
+#define FBMEM_ALIGN     16
+
 /*****************************************************************************
 
     NAME */
@@ -47,6 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    IPTR fbmem;
     struct Library *SysBase = SAGABase->sc_ExecBase;
 
     debug("");
@@ -82,7 +85,10 @@
 
     memset(&SAGABase->sc_CLUT[0], 0, sizeof(SAGABase->sc_CLUT));
 
-    bi->MemoryBase = AllocMem(SAGA_VIDEO_MEMSIZE, MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
+    // Align allocated FB memory
+    fbmem = (IPTR)AllocMem(SAGA_VIDEO_MEMSIZE + (FBMEM_ALIGN - 1), MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
+
+    bi->MemoryBase = (APTR)((fbmem + (FBMEM_ALIGN - 1)) & ~(IPTR)(FBMEM_ALIGN-1));
     bi->MemorySize = SAGA_VIDEO_MEMSIZE;
  
     return (bi->MemoryBase ? TRUE : FALSE);
