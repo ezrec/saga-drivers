@@ -38,7 +38,8 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    UWORD width, height;
+    UWORD width, hsstrt, hsstop, htotal;
+    UWORD height, vsstrt, vsstop, vtotal;
     UBYTE doublescan = 0;
     struct SAGABase *sc = (struct SAGABase *)bi->CardBase;
 
@@ -50,8 +51,20 @@
 
     dump_ModeInfo(mi);
 
+    /* Borders (mi->HorBlankSize and mi->VerBlankSize)
+     * are not truely supported, since the border color
+     * can not be set.
+     */
+
     width = mi->Width;
+    hsstrt = width + mi->HorBlankSize + mi->HorSyncStart;
+    hsstop = hsstrt + mi->HorSyncSize;
+    htotal = mi->HorTotal;
+
     height = mi->Height;
+    vsstrt = height + mi->VerBlankSize + mi->VerSyncStart;
+    vsstop = vsstrt + mi->VerSyncSize;
+    vtotal = mi->VerTotal;
 
     if (IS_DOUBLEY(height))
         doublescan |= SAGA_VIDEO_DBLSCAN_Y;
@@ -61,6 +74,29 @@
 
     Write16(SAGA_VIDEO_WIDTH, width);
     Write16(SAGA_VIDEO_HEIGHT, height);
+
+    /* Monitor mode info */
+    debug("ModeLine \"%ldx%ld\" %ld, %ld %ld %ld %ld, %ld %ld %ld %ld, %sHSync %sVSync%s%s",
+            width, height, mi->PixelClock / 1000000,
+            width, hsstrt, hsstop, htotal,
+            height, vsstrt, vsstop, vtotal,
+            (mi->Flags & GMB_HPOLARITY) ? "+" : "-",
+            (mi->Flags & GMB_VPOLARITY) ? "+" : "-",
+            (doublescan & SAGA_VIDEO_DBLSCAN_X) ? " DoubleScanX" : "",
+            (doublescan & SAGA_VIDEO_DBLSCAN_Y) ? " DoubleScanY" : "");
+
+    Write16(SAGA_VIDEO_HPIXEL, width);
+    Write16(SAGA_VIDEO_HSSTRT, hsstrt);
+    Write16(SAGA_VIDEO_HSSTOP, hsstop);
+    Write16(SAGA_VIDEO_HTOTAL, htotal);
+
+    Write16(SAGA_VIDEO_VPIXEL, height);
+    Write16(SAGA_VIDEO_VSSTRT, vsstrt);
+    Write16(SAGA_VIDEO_VSSTOP, vsstop);
+    Write16(SAGA_VIDEO_VTOTAL, vtotal);
+
+    Write16(SAGA_VIDEO_HVSYNC, ((mi->Flags & GMB_HPOLARITY) ? (1 << 0) : 0) |
+                               ((mi->Flags & GMB_VPOLARITY) ? (1 << 1) : 0));
 
     sc->sc_DoubleScan = doublescan;
 
