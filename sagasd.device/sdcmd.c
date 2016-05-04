@@ -46,7 +46,7 @@
 #define warn(fmt,args...)       sdcmd_log(sd, SDLOG_WARN, fmt ,##args)
 #define error(fmt,args...)      sdcmd_log(sd, SDLOG_ERROR, fmt ,##args)
 
-#define SDCMD_CLKDIV_SLOW       0x10
+#define SDCMD_CLKDIV_SLOW       0xff
 #define SDCMD_CLKDIV_FAST       0x01
 #define SDCMD_CLKDIV_FASTER     0x00
 
