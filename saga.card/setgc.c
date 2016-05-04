@@ -91,8 +91,8 @@
             width, height, mi->PixelClock / 1000000,
             width, hsstrt, hsstop, htotal,
             height, vsstrt, vsstop, vtotal,
-            (mi->Flags & GMB_HPOLARITY) ? "+" : "-",
-            (mi->Flags & GMB_VPOLARITY) ? "+" : "-",
+            (mi->Flags & GMF_HPOLARITY) ? "+" : "-",
+            (mi->Flags & GMF_VPOLARITY) ? "+" : "-",
             (doublescan & SAGA_VIDEO_DBLSCAN_X) ? " DoubleScanX" : "",
             (doublescan & SAGA_VIDEO_DBLSCAN_Y) ? " DoubleScanY" : "");
 
@@ -106,8 +106,8 @@
     Write16(SAGA_VIDEO_VSSTOP, vsstop);
     Write16(SAGA_VIDEO_VTOTAL, vtotal);
 
-    Write16(SAGA_VIDEO_HVSYNC, ((mi->Flags & GMB_HPOLARITY) ? (1 << 0) : 0) |
-                               ((mi->Flags & GMB_VPOLARITY) ? (1 << 1) : 0));
+    Write16(SAGA_VIDEO_HVSYNC, ((mi->Flags & GMF_HPOLARITY) ? (1 << 0) : 0) |
+                               ((mi->Flags & GMF_VPOLARITY) ? (1 << 1) : 0));
 
     sc->sc_DoubleScan = doublescan;
 
