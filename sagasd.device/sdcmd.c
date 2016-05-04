@@ -549,6 +549,14 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
     if (r1)
         return r1;
 
+    /* Enable CRC check mode */
+    sdcmd_send(sd, SDCMD_CRC_ON_OFF, 1);
+    r1 = sdcmd_r1(sd);
+    if (r1) {
+        /* Non-fatal if this failed */
+        debug("r1=0x%lx", r1);
+    }
+
     /* Check for voltage levels */
     sdcmd_send(sd, SDCMD_READ_OCR, 0);
     r1 = sdcmd_r3(sd, &info->ocr);
