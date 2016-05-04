@@ -66,14 +66,25 @@
     vsstop = vsstrt + mi->VerSyncSize;
     vtotal = mi->VerTotal;
 
-    if (IS_DOUBLEY(height))
-        doublescan |= SAGA_VIDEO_DBLSCAN_Y;
-
-    if (IS_DOUBLEX(width))
-        doublescan |= SAGA_VIDEO_DBLSCAN_X;
-
     Write16(SAGA_VIDEO_WIDTH, width);
     Write16(SAGA_VIDEO_HEIGHT, height);
+
+    if (IS_DOUBLEX(width)) {
+        doublescan |= SAGA_VIDEO_DBLSCAN_X;
+        hsstrt <<= 1;
+        hsstop <<= 1;
+        htotal <<= 1;
+        width  <<= 1;
+    }
+
+    if (IS_DOUBLEY(height)) {
+        doublescan |= SAGA_VIDEO_DBLSCAN_Y;
+        vsstrt <<= 1;
+        vsstop <<= 1;
+        vtotal <<= 1;
+        height <<= 1;
+
+    }
 
     /* Monitor mode info */
     debug("ModeLine \"%ldx%ld\" %ld, %ld %ld %ld %ld, %ld %ld %ld %ld, %sHSync %sVSync%s%s",

@@ -45,12 +45,17 @@
     int clock_id;
 
     debug("Mode: %p", mi);
-    debug("pixelclock in = %ld", pixelclock);
+    debug("pixelclock ref = %ld", pixelclock);
 
     mi->PixelClock = pixelclock;
 
+    if (IS_DOUBLEX(mi->Width))
+        pixelclock *= 2;
+
     if (IS_DOUBLEY(mi->Height))
         pixelclock *= 2;
+
+    debug("pixelclock in = %ld", pixelclock);
 
     clock_id = saga_pll_clock_lookup(is_NTSC, &pixelclock);
 

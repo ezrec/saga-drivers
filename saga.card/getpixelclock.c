@@ -48,6 +48,9 @@
 
     debug("index=%ld, pixelclock = %ld", index, freq);
 
+    if (IS_DOUBLEX(mi->Width))
+        freq /= 2;
+
     if (IS_DOUBLEY(mi->Height))
         freq /= 2;
 
