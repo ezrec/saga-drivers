@@ -48,6 +48,7 @@
 
 #define SDCMD_CLKDIV_SLOW       0x10
 #define SDCMD_CLKDIV_FAST       0x01
+#define SDCMD_CLKDIV_FASTER     0x00
 
 static UBYTE crc7(UBYTE crc, UBYTE byte)
 {
@@ -437,6 +438,7 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
 {
     struct sdcmd_info *info = &sd->info;
     UBYTE r1;
+    UBYTE speed;
     ULONG r7;
     int i;
 
@@ -594,8 +596,37 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
         info("blocks=%ld", info->blocks);
     }
 
+    /* Default speed mode */
+    speed = SDCMD_CLKDIV_FAST;
+
+    /* Try setting the card into high speed mode.  It's possible
+     * to check first, but just trying to set is enough?
+     *
+     * First nibble is Function Group 1 - Access mode / Bus Speed mode;
+     * the only thing that applies to us in SPI mode.
+     */
+    sdcmd_send(sd, SDCMD_SWITCH_FUNCTION, 0x80fffff1);
+    r1 = sdcmd_r1a(sd);
+    debug("r1=0x%lx", r1);
+    if (!r1) {
+        UBYTE cmd6[512/8];
+        ULONG f1_sel;
+
+        r1 = sdcmd_read_packet(sd, cmd6, sizeof(cmd6));
+        sdcmd_select(sd, FALSE);
+
+        f1_sel = bits(&cmd6[63], 376, 4);
+
+        /* Out of all of the above, just check f1_sel to see
+         * if it is what we set it to.
+         */
+        if (f1_sel == 1)
+            speed = SDCMD_CLKDIV_FASTER;
+    }
+
     /* Switch to high speed mode */
-    sdcmd_clkdiv(sd, SDCMD_CLKDIV_FAST);
+    sdcmd_clkdiv(sd, speed);
+    r1 = 0;
 
 exit:
     sdcmd_select(sd, FALSE);

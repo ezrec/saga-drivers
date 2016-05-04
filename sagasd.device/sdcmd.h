@@ -57,6 +57,7 @@
 /* Base commands */
 #define SDCMD_GO_IDLE_STATE             0
 #define SDCMD_SEND_OP_COND              1
+#define SDCMD_SWITCH_FUNCTION           6
 #define SDCMD_SEND_IF_COND              8
 #define SDCMD_SEND_CSD                  9
 #define SDCMD_SEND_CID                  10
