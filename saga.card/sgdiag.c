@@ -79,7 +79,7 @@ static int p96mode(struct Library *SysBase, struct Library *DOSBase, ULONG width
     return RETURN_OK;
 }
 
-AROS_SH7H(SDDiag , 0.9a,                 "SAGA Graphic Diagnostic\n",
+AROS_SH7H(SDDiag , 0.9b,                 "SAGA Graphic Diagnostic\n",
 AROS_SHAH(ULONG *  , W= ,WIDTH,/K/N,    0 , "Width\n"),
 AROS_SHAH(ULONG *  , H= ,HEIGHT,/K/N,   0 , "Height\n"),
 AROS_SHAH(ULONG *  , F= ,FORMAT,/K/N,   0 , "Format (0-5)\n"),
