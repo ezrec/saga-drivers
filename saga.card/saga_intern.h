@@ -95,8 +95,8 @@ static inline VOID Write16(IPTR addr, UWORD value)
 
 /* Test if width or height requires doublescan
  */
-#define IS_DOUBLEX(w)   ((w) <= 320)
-#define IS_DOUBLEY(h)   ((h) <= 240)
+#define IS_DOUBLEX(w)   ((w) <= 500)
+#define IS_DOUBLEY(h)   ((h) <= 300)
 
 /* saga_pll.c */
 int saga_pll_clock_count(void);
