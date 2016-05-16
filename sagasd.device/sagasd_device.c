@@ -320,7 +320,7 @@ static LONG SAGASD_PerformSCSI(struct IORequest *io)
         }
 
         for (i = 0; i < 4; i++)
-            data[0 + i] = (sdc->info.blocks >> (24 - i*8)) & 0xff;
+            data[0 + i] = ((sdc->info.blocks - 1) >> (24 - i*8)) & 0xff;
         for (i = 0; i < 4; i++)
             data[4 + i] = (sdc->info.block_size >> (24 - i*8)) & 0xff;
 
