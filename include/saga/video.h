@@ -40,7 +40,7 @@
 #define SAGA_VIDEO_DBLSCAN_Y         2
 #define SAGA_VIDEO_DBLSCAN_XY        (SAGA_VIDEO_DBLSCAN_X | SAGA_VIDEO_DBLSCAN_Y)
 
-#define SAGA_VIDEO_MEMSIZE   0x00400000    /* Default 4M video ram */
+#define SAGA_VIDEO_MEMSIZE   0x00800000    /* Default 8M video ram */
 
 #define SAGA_VIDEO_PLANEPTR  0x00DFF1EC    /* 32-bit pointer to video ram */
 #define SAGA_VIDEO_WIDTH     0x00DFF1F0    /* 16-bit width */
