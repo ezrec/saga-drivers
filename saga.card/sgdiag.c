@@ -79,82 +79,18 @@ static int p96mode(struct Library *SysBase, struct Library *DOSBase, ULONG width
     return RETURN_OK;
 }
 
-AROS_SH7H(SDDiag , 0.9c,                 "SAGA Graphic Diagnostic\n",
+AROS_SH3H(SDDiag , 0.9c,                 "SAGA Graphic Diagnostic\n",
 AROS_SHAH(ULONG *  , W= ,WIDTH,/K/N,    0 , "Width\n"),
 AROS_SHAH(ULONG *  , H= ,HEIGHT,/K/N,   0 , "Height\n"),
-AROS_SHAH(ULONG *  , F= ,FORMAT,/K/N,   0 , "Format (0-5)\n"),
-AROS_SHAH(ULONG *  , P= ,PADDING,/K,  0 , "Padding\n"),
-AROS_SHAH(BOOL     , X= ,XDOUBLE,/S, FALSE, "Double X\n"),
-AROS_SHAH(BOOL     , Y= ,YDOUBLE,/S, FALSE, "Double Y\n"),
-AROS_SHAH(BOOL     , P96= ,PICASSO96,/S, FALSE, "Use Picasso96, not hardware banging\n"))
+AROS_SHAH(ULONG *  , F= ,FORMAT,/K/N,   0 , "P96 RGBFormat\n"))
 {
     AROS_SHCOMMAND_INIT
 
     ULONG width = SHArg(WIDTH) ? *SHArg(WIDTH) : 640;
     ULONG height= SHArg(HEIGHT) ? *SHArg(HEIGHT) : 480;
-    ULONG mode  = SHArg(FORMAT) ? *SHArg(FORMAT) : SAGA_VIDEO_FORMAT_RGB16;
-    BOOL  dx    = SHArg(XDOUBLE);
-    BOOL  dy    = SHArg(YDOUBLE);
-    BOOL  p96   = SHArg(PICASSO96);
-    ULONG padding = SHArg(PADDING) ? *SHArg(PADDING) : 0;
-    int bpp = (mode == SAGA_VIDEO_FORMAT_CLUT8) ? 1 :
-              (mode == SAGA_VIDEO_FORMAT_RGB16) ? 2 :
-              (mode == SAGA_VIDEO_FORMAT_RGB15) ? 2 :
-              (mode == SAGA_VIDEO_FORMAT_RGB24) ? 3 :
-              (mode == SAGA_VIDEO_FORMAT_RGB32) ? 4 : 1;
-    int i, gx, gy, x, y;
-    UBYTE *here;
+    ULONG mode  = SHArg(FORMAT) ? *SHArg(FORMAT) : 0;
 
-    if (p96)
-        return p96mode((struct Library *)SysBase, (struct Library *)DOSBase, width, height, mode);
-
-    here = AllocMem(SAGA_VIDEO_MEMSIZE, MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
-    if (!here) {
-        Printf("Can't allocate %ldMB memory window\n", SAGA_VIDEO_MEMSIZE / 1024 / 1024);
-        return RETURN_FAIL;
-    }
-
-    /* Set up video hardware */
-    Printf("@$%08lx %ldx%ld, Format %ld", (ULONG)here, width, height, mode);
-    if (dx) {
-        mode |= SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_X);
-        Printf(", DoubleX");
-    }
-    if (dy) {
-        mode |= SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_Y);
-        Printf(", DoubleY");
-    }
-    Printf("\n");
-
-    Write32(SAGA_VIDEO_PLANEPTR, (ULONG)here);
-    Write16(SAGA_VIDEO_WIDTH, width);
-    Write16(SAGA_VIDEO_HEIGHT, height);
-    Write16(SAGA_VIDEO_MODE, mode);
-
-    /* Fill CLUT with a grayscale */
-    for (i  = 0; i < 256; i++)
-        Write32(SAGA_VIDEO_CLUT(i), 0x010101 * i);
-
-    /* Clear 4M of ram */
-    for (i = 0; i < SAGA_VIDEO_MEMSIZE; i += sizeof(ULONG))
-        Write32((ULONG)here + i, 0);
-
-    /* Fill visible video memory with a 8x8 grid */
-    for (gy = 0; gy < height/8; gy++) {
-        for (y = 0; y < 8; y++) {
-            UBYTE color = gy;
-            for (gx = 0; gx < width/8; gx++) {
-                color++;
-                for (x = 0; x < 8*bpp; x++, here++)
-                    Write8((ULONG)here, color);
-            }
-            here += padding;
-        }
-    }
-
-    FreeMem(here, SAGA_VIDEO_MEMSIZE);
-
-    return RETURN_OK;
+    return p96mode((struct Library *)SysBase, (struct Library *)DOSBase, width, height, mode);
 
     AROS_SHCOMMAND_EXIT
 }
