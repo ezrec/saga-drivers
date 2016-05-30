@@ -66,9 +66,6 @@
     vsstop = vsstrt + mi->VerSyncSize;
     vtotal = mi->VerTotal;
 
-    Write16(SAGA_VIDEO_WIDTH, width);
-    Write16(SAGA_VIDEO_HEIGHT, height);
-
     if (IS_DOUBLEX(width)) {
         doublescan |= SAGA_VIDEO_DBLSCAN_X;
         hsstrt <<= 1;
