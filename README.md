@@ -12,6 +12,12 @@ SAGA Chipset Drivers (for AmigaOS 3.x)
   24-bit RGB, and 32-bit RGB.
 * Works with both Picasso96 for AmigaOS, or with AROS
 
+Accepts the following Monitor tooltype:
+
+* VideoMemSize=xxxxx
+
+xxxx can be bytes, xxxxK (kilobytes), or xxxxM (megabytes)
+
 ### Compilation
 
 This driver is designed to be compiled via the AROS ABIv1 m68k crosscompiler.

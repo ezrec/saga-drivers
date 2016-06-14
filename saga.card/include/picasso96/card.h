@@ -322,7 +322,9 @@ struct BoardInfo {
     ULONG               MemoryClock;
     ULONG               PixelClockCount[MAXMODES];
 
+    /* R: APTR AllocCardMem(struct BoardInfo *bi, ULONG size, BOOL force, BOOL system) (A0, D0, D1, D2) */
     APTR                AllocCardMem;
+    /* R: APTR FreeCardMem(struct BoardInfo *bi, APTR membase) (A0, A1) */
     APTR                FreeCardMem;
     /* R: BOOL SetSwitch(struct BoardInfo *bi, BOOL new_state) (A0, D0) */
     APTR                SetSwitch;

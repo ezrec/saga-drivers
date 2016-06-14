@@ -10,10 +10,13 @@
 #include <exec/execbase.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "saga_intern.h"
 
 #include "saga_private.h"
+
+#define FBMEM_ALIGN     16
 
 static void add_resolution(struct BoardInfo *bi, ULONG displayid, const struct ModeInfo *tmpl)
 {
@@ -76,13 +79,46 @@ static void add_resolution(struct BoardInfo *bi, ULONG displayid, const struct M
     AddTail((struct List *)&bi->ResolutionsList, (struct Node *)res);
 }
 
+/*
+ * Decode VIDEOMEMSIZE= parameter - we accept:
+ *  [0-9]*
+ *  [0-9]*[bB]
+ *  [0-9]*[kK]
+ *  [0-9]*[mM]
+ */
+ULONG decode_memsize(CONST_STRPTR str)
+{
+    ULONG val = 0;
+
+    if (!str || *str == 0)
+        return 0;
+
+    for (;*str >= '0' && *str <= '9';str++) {
+        val *= 10;
+        val += *str - '0';
+    }
+
+    if (*str == 0 || *str == 'b' || *str == 'B')
+        return val;
+
+
+    if (*str == 'k' || *str == 'K')
+        return val * 1024;
+
+    if (*str == 'm' || *str == 'M')
+        return val * 1024 * 1024;
+
+    return 0;
+}
+
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(BOOL, InitCard,
+        AROS_LH2(BOOL, InitCard,
 
 /*  SYNOPSIS */
         AROS_LHA(struct BoardInfo *, bi, A0),
+        AROS_LHA(CONST_STRPTR *, tooltypes, A1),
 
 /*  LOCATION */
         struct SAGABase *, SAGABase, 6, Saga)
@@ -109,12 +145,38 @@ static void add_resolution(struct BoardInfo *bi, ULONG displayid, const struct M
 {
     AROS_LIBFUNC_INIT
 
+    struct ExecBase *SysBase = (struct ExecBase *)bi->ExecBase;
+    struct Library *UtilityBase;
     int i, clocks;
     const ULONG displayid_base = 0x52001000;
+    ULONG memsize = 0;
+    CONST_STRPTR *tt;
+    IPTR fbmem;
 
     debug("bi: %p", bi);
     dump_BoardInfo(bi);
 
+    UtilityBase = OpenLibrary("utility.library", 0);
+    for (tt = tooltypes; tt && *tt; tt++) {
+        if (Strnicmp(*tt, "VIDEOMEMSIZE=", 13) == 0)
+            memsize = decode_memsize(*tt + 13);
+    }
+    CloseLibrary(UtilityBase);
+
+    if (memsize == 0)
+        memsize = SAGA_VIDEO_MEMSIZE;
+
+bug("memsize=%lu\n", memsize);
+
+    // Align allocated FB memory
+    fbmem = (IPTR)AllocMem(memsize + (FBMEM_ALIGN - 1),
+                           MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
+    if (!fbmem)
+        return FALSE;
+
+    bi->MemoryBase = (APTR)((fbmem + (FBMEM_ALIGN - 1)) & ~(IPTR)(FBMEM_ALIGN-1));
+    bi->MemorySize = memsize;
+ 
     bi->BitsPerCannon = 8;
     bi->RGBFormats = RGBFF_CLUT |
                      RGBFF_Y4U2V2 |
