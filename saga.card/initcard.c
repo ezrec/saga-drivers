@@ -16,7 +16,7 @@
 
 #include "saga_private.h"
 
-#define FBMEM_ALIGN     16
+#define FBMEM_ALIGN     (64*1024)
 
 static void add_resolution(struct BoardInfo *bi, ULONG displayid, const struct ModeInfo *tmpl)
 {
@@ -111,6 +111,37 @@ ULONG decode_memsize(CONST_STRPTR str)
     return 0;
 }
 
+static VOID *AllocAligned(struct ExecBase *SysBase, ULONG memsize, ULONG flags, ULONG align)
+{
+    IPTR fbmem, fbptr;
+    IPTR offset;
+
+    /* Allocate memory */
+    fbmem = (IPTR)AllocMem(memsize + (align - sizeof(struct MemChunk)), flags);
+    if (!fbmem)
+        return NULL;
+
+    fbptr = (fbmem + (align - 1)) & ~(IPTR)(align-1);
+
+    offset = fbptr - fbmem;
+
+    /* If we can, trim off the front */
+    if (offset >= sizeof(struct MemChunk)) {
+        FreeMem(fbmem, offset);
+    }
+
+    /* If we can, trim off the end */
+    offset = (align - sizeof(struct MemChunk)) - offset;
+    if (offset >= sizeof(struct MemChunk)) {
+        FreeMem(fbptr + memsize, offset);
+    }
+
+    /* At this point, fbptr should be 'memsize' in size, and 'align' aligned.
+     */
+    return (VOID *)fbptr;
+}
+
+
 /*****************************************************************************
 
     NAME */
@@ -151,7 +182,7 @@ ULONG decode_memsize(CONST_STRPTR str)
     const ULONG displayid_base = 0x52001000;
     ULONG memsize = 0;
     CONST_STRPTR *tt;
-    IPTR fbmem;
+    VOID *fbmem;
 
     debug("bi: %p", bi);
     dump_BoardInfo(bi);
@@ -166,15 +197,11 @@ ULONG decode_memsize(CONST_STRPTR str)
     if (memsize == 0)
         memsize = SAGA_VIDEO_MEMSIZE;
 
-bug("memsize=%lu\n", memsize);
-
-    // Align allocated FB memory
-    fbmem = (IPTR)AllocMem(memsize + (FBMEM_ALIGN - 1),
-                           MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST);
+    fbmem = AllocAligned(SysBase, memsize, MEMF_REVERSE | MEMF_LOCAL | MEMF_FAST, FBMEM_ALIGN);
     if (!fbmem)
         return FALSE;
 
-    bi->MemoryBase = (APTR)((fbmem + (FBMEM_ALIGN - 1)) & ~(IPTR)(FBMEM_ALIGN-1));
+    bi->MemoryBase = fbmem;
     bi->MemorySize = memsize;
  
     bi->BitsPerCannon = 8;
