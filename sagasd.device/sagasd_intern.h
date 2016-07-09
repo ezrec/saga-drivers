@@ -25,8 +25,9 @@ struct SAGASDBase {
         struct Unit sdu_Unit;
         struct Task sdu_Task;
         TEXT        sdu_Name[6];                /* "SDIOx" */
-        ULONG       sdu_Stack[1024];          /* 4K stack */
+        ULONG       sdu_Stack[1024];            /* 4K stack */
         BOOL        sdu_Enabled;
+        ULONG       sdu_Flags;                  /* OpenDevice() flags */
 
         struct sdcmd sdu_SDCmd;
         struct MsgPort *sdu_MsgPort;

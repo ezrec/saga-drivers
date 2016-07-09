@@ -40,6 +40,7 @@
 #include <devices/trackdisk.h>
 #include <devices/timer.h>
 #include <devices/scsidisk.h>
+#include <devices/sagasd.h>
 
 #include <aros/symbolsets.h>
 
@@ -646,8 +647,17 @@ static void SAGASD_Detect(struct Library *SysBase, struct SAGASDUnit *sdu)
         if (present) {
             UBYTE sderr;
 
+            debug("========= sdu_Flags: 0x%0lx", sdu->sdu_Flags);
+
             /* Re-run the identify */
             sderr = sdcmd_detect(&sdu->sdu_SDCmd);
+
+            /* If requested, force the clock divisor */
+            if (sderr == 0 && (sdu->sdu_Flags & SAGASD_FLAGS_HAS_CLKDIV)) {
+                UBYTE clkdiv = SAGASD_FLAGS_CLKDIV_of(sdu->sdu_Flags);
+                debug("======== Clkdiv forced to: %ld\n", clkdiv);
+                sdcmd_clkdiv(&sdu->sdu_SDCmd, clkdiv);
+            }
 
             Forbid();
             /* Make the drive present. */
@@ -1022,13 +1032,17 @@ static int GM_UNIQUENAME(open)(struct SAGASDBase * SAGASDBase,
 
         /* Get SDU structure */
         sdu = &SAGASDBase->sd_Unit[unitnum];
+        if (flags != sdu->sdu_Flags) {
+            sdu->sdu_Flags = flags;
+            sdu->sdu_Present = FALSE;
+        }
 	if (sdu->sdu_Enabled) {
     	    iotd->iotd_Req.io_Unit = &sdu->sdu_Unit;
     	    sdu->sdu_Unit.unit_OpenCnt++;
     	    iotd->iotd_Req.io_Error = 0;
 	}
 
-        debug("Open=%d", unitnum, iotd->iotd_Req.io_Error);
+        debug("Open Unit=%d Flags=0x%lx", unitnum, flags, iotd->iotd_Req.io_Error);
     }
   
     return iotd->iotd_Req.io_Error == 0;

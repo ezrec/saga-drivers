@@ -126,6 +126,12 @@ struct sdcmd {
     } func;
 };
 
+#define SDCMD_CLKDIV_SLOW       0xff
+#define SDCMD_CLKDIV_NORMAL     0x02
+#define SDCMD_CLKDIV_FAST       0x00
+
+VOID sdcmd_clkdiv(struct sdcmd *sd, UBYTE divisor);
+
 VOID sdcmd_send(struct sdcmd *sd, UBYTE cmd, ULONG arg);
 UBYTE sdcmd_asend(struct sdcmd *sd, UBYTE acmd, ULONG arg);
 

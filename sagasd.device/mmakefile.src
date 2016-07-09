@@ -48,5 +48,9 @@ SDDIAG_FILES := sddiag sdcmd
        modname=sagasd modtype=device \
        files="$(DEVICE_FILES)" uselibs="romhack"
 
+INCLUDE_FILES=include/devices/sagasd.h
+
+%copy_includes path=devices dir=include/devices
+
 %common
 #  vim: set shiftwidth=8 noexpandtab: #

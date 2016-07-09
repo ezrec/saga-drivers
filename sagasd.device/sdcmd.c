@@ -46,10 +46,6 @@
 #define warn(fmt,args...)       sdcmd_log(sd, SDLOG_WARN, fmt ,##args)
 #define error(fmt,args...)      sdcmd_log(sd, SDLOG_ERROR, fmt ,##args)
 
-#define SDCMD_CLKDIV_SLOW       0xff
-#define SDCMD_CLKDIV_FAST       0x01
-#define SDCMD_CLKDIV_FASTER     0x00
-
 static UBYTE crc7(UBYTE crc, UBYTE byte)
 {
     int i;
@@ -202,7 +198,7 @@ VOID sdcmd_select(struct sdcmd *sd, BOOL cs)
     }
 }
 
-static VOID sdcmd_clkdiv(struct sdcmd *sd, UBYTE val)
+VOID sdcmd_clkdiv(struct sdcmd *sd, UBYTE val)
 {
     diag("SD_CLK  => $%04lx", val);
 
@@ -649,7 +645,7 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
     }
 
     /* Default speed mode */
-    speed = SDCMD_CLKDIV_FAST;
+    speed = SDCMD_CLKDIV_NORMAL;
 
     /* Try setting the card into high speed mode.  It's possible
      * to check first, but just trying to set is enough?
@@ -673,7 +669,7 @@ UBYTE sdcmd_detect(struct sdcmd *sd)
          * if it is what we set it to.
          */
         if (f1_sel == 1)
-            speed = SDCMD_CLKDIV_FASTER;
+            speed = SDCMD_CLKDIV_FAST;
     }
 
     /* Switch to high speed mode */
